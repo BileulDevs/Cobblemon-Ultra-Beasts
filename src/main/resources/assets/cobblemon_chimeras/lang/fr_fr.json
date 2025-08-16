@@ -1,0 +1,12 @@
+{
+  "itemgroup.shiny_charm": "Charme Chroma",
+  "item.shiny_charm.shiny_charm": "Charme Chroma",
+  "message.shiny_charm.success": "Le Charme Chroma a l'air d'être plus brillant que d'habitude..",
+  "command.shiny.reload.success": "§aConfiguration rechargée avec succès !",
+  "command.shiny.reload.rate": "§7Nouveau taux de shiny: §e1/%s",
+  "command.shiny.reload.error": "§cErreur lors du rechargement: %s",
+  "command.shiny.reload.success_short": "§aConfig rechargée ! Taux: 1/%s",
+  "command.shiny.info.header": "§6=== Info Shiny ===",
+  "command.shiny.info.rate": "§7Taux actuel: §e1/%s §7(§e%s%%§7)",
+  "command.shiny.info.rate_short": "§eTaux shiny: 1/%s"
+}

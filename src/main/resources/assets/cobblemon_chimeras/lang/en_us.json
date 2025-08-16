@@ -1,0 +1,12 @@
+{
+  "itemgroup.shiny_charm": "Shiny Charm",
+  "item.shiny_charm.shiny_charm": "Shiny Charm",
+  "message.shiny_charm.success": "Shiny Charm seems to be more shiny than usual..",
+  "command.shiny.reload.success": "§aConfiguration reloaded successfully!",
+  "command.shiny.reload.rate": "§7New shiny rate: §e1/%s",
+  "command.shiny.reload.error": "§cError while reloading: %s",
+  "command.shiny.reload.success_short": "§aConfig reloaded! Rate: 1/%s",
+  "command.shiny.info.header": "§6=== Shiny Info ===",
+  "command.shiny.info.rate": "§7Current rate: §e1/%s §7(§e%s%%§7)",
+  "command.shiny.info.rate_short": "§eShiny rate: 1/%s"
+}

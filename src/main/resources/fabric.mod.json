@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon_chimeras",
+  "version": "${version}",
+  "name": "Cobblemon Chimeras",
+  "description": "A mod that allows Ultra Beasts to spawn in their dimension",
+  "authors": [
+    "Darcosse"
+  ],
+  "license": "MIT License",
+  "icon": "assets/example/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.darcosse.chimeras.fabric.Chimeras"
+    ]
+  },
+  "depends": {
+    "minecraft": "1.21.1",
+    "cobblemon": ">=1.6.0"
+  }
+}
