@@ -1,7 +1,7 @@
 {
   "variants": {
     "": {
-      "model": "cobblemon_chimeras:block/void_portal"
+      "model": "cobblemon_chimeras:block/chimeras_core"
     }
   }
 }

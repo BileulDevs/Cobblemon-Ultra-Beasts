@@ -39,6 +39,14 @@ public class Chimeras implements ModInitializer {
                     .luminance(10)
     );
 
+    public static final Block CHIMERAS_CORE_BLOCK = new ChimerasCoreBlock(
+            FabricBlockSettings.create()
+                    .mapColor(MapColor.BLACK)
+                    .strength(50.0f, 1200.0f)
+                    .sounds(BlockSoundGroup.GLASS)
+                    .luminance(10)
+    );
+
     @Override
     public void onInitialize() {
 
@@ -57,15 +65,26 @@ public class Chimeras implements ModInitializer {
         );
 
         Registry.register(
+                Registries.BLOCK,
+                Identifier.of(MOD_ID, "chimeras_core"),
+                CHIMERAS_CORE_BLOCK
+        );
+
+        Registry.register(
                 Registries.ITEM,
                 Identifier.of(MOD_ID, "chimeras_portal"),
                 new BlockItem(CHIMERAS_PORTAL_BLOCK, new Item.Settings())
         );
 
+        Registry.register(
+                Registries.ITEM,
+                Identifier.of(MOD_ID, "chimeras_core"),
+                new BlockItem(CHIMERAS_CORE_BLOCK, new Item.Settings())
+        );
+
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(content -> {
             content.add(CHIMERAS_PORTAL_BLOCK);
+            content.add(CHIMERAS_CORE_BLOCK);
         });
-
-        System.out.println("Chimeras initialisé !");
     }
 }

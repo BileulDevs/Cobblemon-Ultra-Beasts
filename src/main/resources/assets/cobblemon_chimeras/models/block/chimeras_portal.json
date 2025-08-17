@@ -1,6 +1,6 @@
 {
   "parent": "block/cube_all",
   "textures": {
-    "all": "cobblemon_chimeras:blocks/void_portal"
+    "all": "cobblemon_chimeras:blocks/chimeras_portal"
   }
 }

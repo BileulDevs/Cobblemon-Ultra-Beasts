@@ -1,44 +1,131 @@
 package dev.darcosse.chimeras.fabric;
 
+import com.cobblemon.mod.common.CobblemonEntities;
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
+import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
+import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.cobblemon.mod.common.pokemon.Species;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
+import net.minecraft.block.ShapeContext;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.particle.ParticleTypes;
 
-public class ChimerasPortalBlock extends Block {
-    public ChimerasPortalBlock(Settings settings) {
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+
+public class ChimerasCoreBlock extends Block {
+
+    // Définition des formes pour chaque élément du cristal
+    private static final VoxelShape BASE_SHAPE = Block.createCuboidShape(6.5, 4, 6, 9.5, 5.5, 10);
+    private static final VoxelShape CORE_SHAPE = Block.createCuboidShape(6, 5.5, 6.5, 10, 10.5, 9.5);
+    private static final VoxelShape TIP_SHAPE = Block.createCuboidShape(7, 10, 7, 9, 12, 9);
+    private static final VoxelShape SHARD1_SHAPE = Block.createCuboidShape(5, 7, 7, 6, 9, 8);
+    private static final VoxelShape SHARD2_SHAPE = Block.createCuboidShape(10, 8, 7, 11, 10, 8.5);
+
+    // Combinaison de toutes les formes en une seule hitbox
+    private static final VoxelShape CRYSTAL_SHAPE = VoxelShapes.union(
+            BASE_SHAPE,
+            CORE_SHAPE,
+            TIP_SHAPE,
+            SHARD1_SHAPE,
+            SHARD2_SHAPE
+    );
+
+    public ChimerasCoreBlock(Settings settings) {
         super(settings);
+    }
+
+    @Override
+    protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return CRYSTAL_SHAPE;
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+        return CRYSTAL_SHAPE;
     }
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player,
                                  BlockHitResult hit) {
         if (!world.isClient && player instanceof ServerPlayerEntity serverPlayer) {
-            teleportToChimerasDimension(serverPlayer);
+            summonChimera(world, pos);
+            destroyChimeraCore(world, pos, serverPlayer);
             return ActionResult.SUCCESS;
         }
         return ActionResult.PASS;
     }
 
-    @Override
-    public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
-        if (!world.isClient && entity instanceof ServerPlayerEntity serverPlayer) {
-            teleportToChimerasDimension(serverPlayer);
+    private void summonChimera(World world, BlockPos pos) {
+        List<Species> ultraBeasts = PokemonSpecies.INSTANCE.getSpecies()
+                .stream()
+                .filter(species -> species.create(1).isUltraBeast())
+                .collect(Collectors.toList());
+
+        if (ultraBeasts.isEmpty()) {
+            return;
         }
+
+        Random random = new Random();
+        Species randomUltraBeast = ultraBeasts.get(random.nextInt(ultraBeasts.size()));
+
+        Pokemon chimera = randomUltraBeast.create(80);
+
+        chimera.sendOut(
+                (ServerWorld) world,
+                pos.toCenterPos().add(0, 1, 0),
+                null,
+                pokemonEntity -> {
+                    return null;
+                }
+        );
     }
 
-    private void teleportToChimerasDimension(ServerPlayerEntity player) {
-        ServerWorld voidWorld = player.getServer().getWorld(Chimeras.CHIMERAS_DIMENSION);
-        if (voidWorld != null) {
-            player.teleport(voidWorld, 0, 83, 0, player.getYaw(), player.getPitch());
+    private void destroyChimeraCore(World world, BlockPos pos, ServerPlayerEntity player) {
+        player.playSoundToPlayer(
+                SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
+                SoundCategory.BLOCKS,
+                1.0F,
+                1.0F
+        );
+
+        if (world instanceof ServerWorld serverWorld) {
+            serverWorld.getPlayers().forEach(serverPlayer -> {
+                if (serverPlayer.squaredDistanceTo(pos.getX(), pos.getY(), pos.getZ()) < 64 * 64) {
+                    serverPlayer.playSoundToPlayer(
+                            SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
+                            SoundCategory.BLOCKS,
+                            1.0F,
+                            1.0F
+                    );
+                }
+            });
+
+            serverWorld.spawnParticles(
+                    ParticleTypes.EXPLOSION,
+                    pos.getX() + 0.5,
+                    pos.getY() + 0.5,
+                    pos.getZ() + 0.5,
+                    1,
+                    0.0, 0.0, 0.0,
+                    0.0
+            );
         }
+
+        world.breakBlock(pos, false);
     }
 }
