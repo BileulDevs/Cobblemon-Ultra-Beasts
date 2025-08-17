@@ -50,6 +50,31 @@ public class ChimerasCoreBlock extends Block {
     }
 
     @Override
+    public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
+        super.onBlockAdded(state, world, pos, oldState, notify);
+
+        if (!world.isClient) {
+            world.scheduleBlockTick(pos, this, 100); // 100 ticks = 5 secondes
+        }
+    }
+
+    @Override
+    public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, net.minecraft.util.math.random.Random random) {
+        // Joue un son de beacon
+        world.playSound(
+                null, // null = tout le monde entend
+                pos,
+                SoundEvents.BLOCK_BEACON_AMBIENT, // Son du beacon
+                SoundCategory.BLOCKS,
+                1.0f, // volume
+                1.0f  // pitch
+        );
+
+        // Reprogramme un nouveau tick dans 5 secondes
+        world.scheduleBlockTick(pos, this, 100);
+    }
+
+    @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         return CRYSTAL_SHAPE;
     }
@@ -69,6 +94,8 @@ public class ChimerasCoreBlock extends Block {
         }
         return ActionResult.PASS;
     }
+
+
 
     private void summonChimera(World world, BlockPos pos) {
         List<Species> ultraBeasts = PokemonSpecies.INSTANCE.getSpecies()

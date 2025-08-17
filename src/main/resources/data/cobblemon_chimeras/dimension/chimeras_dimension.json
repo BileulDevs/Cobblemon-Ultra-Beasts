@@ -4,7 +4,7 @@
     "type": "cobblemon_chimeras:chimeras_generator",
     "biome_source": {
       "type": "minecraft:fixed",
-      "biome": "minecraft:the_end"
+      "biome": "cobblemon_chimeras:chimeras_biome"
     }
   }
 }

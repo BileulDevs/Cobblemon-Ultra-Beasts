@@ -7,12 +7,12 @@ import net.minecraft.block.Blocks;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.ChunkRegion;
-import net.minecraft.world.HeightLimitView;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.*;
 import net.minecraft.world.biome.*;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.biome.source.BiomeAccess;
@@ -136,7 +136,8 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
                         chunk.setBlockState(new BlockPos(x, y, z), blockState, false);
                     }
 
-                    if (distanceFromCenter < islandRadius * 0.5 && Math.random() < 0.03) {
+                    // Génération des cristaux avec zones d'exclusion
+                    if (shouldGenerateCrystal(worldX, worldZ, distanceFromCenter, islandRadius)) {
                         int crystalHeight = 2 + (int)(Math.random() * 3);
                         for (int i = 1; i <= crystalHeight; i++) {
                             if (i <= 1) {
@@ -182,20 +183,40 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
         return chunk;
     }
 
+    // Méthode pour déterminer si un cristal peut être généré
+    private boolean shouldGenerateCrystal(int worldX, int worldZ, double distanceFromCenter, int islandRadius) {
+        if (distanceFromCenter >= islandRadius * 0.5 || Math.random() >= 0.03) {
+            return false;
+        }
+
+        double distanceFromCenterWorld = Math.sqrt(worldX * worldX + worldZ * worldZ);
+        if (distanceFromCenterWorld <= 10) {
+            return false;
+        }
+
+        double spawnX = -0.5;
+        double spawnZ = -22.5;
+        double distanceFromSpawn = Math.sqrt(Math.pow(worldX - spawnX, 2) + Math.pow(worldZ - spawnZ, 2));
+
+        if (distanceFromSpawn <= 10) {
+            return false;
+        }
+
+        return true;
+    }
+
     @Override
     public void generateFeatures(StructureWorldAccess world, Chunk chunk, StructureAccessor structureAccessor) {
-        // Ne rien faire - empêche la génération des structures de l'End
-        // (piliers d'obsidienne, plateforme de spawn, etc.)
     }
 
     @Override
     public int getHeight(int x, int z, Heightmap.Type heightmap, HeightLimitView world, NoiseConfig noiseConfig) {
         double distanceFromCenter = Math.sqrt(x * x + z * z);
-        if (distanceFromCenter <= 32) { // Rayon ajusté à 32 comme dans generateIsland
+        if (distanceFromCenter <= 32) {
             double edgeFactor = 1.0 - (distanceFromCenter / 32);
             edgeFactor = Math.pow(edgeFactor, 0.5);
-            int thickness = (int) (4 * edgeFactor); // Même calcul que dans generateIsland
-            return 82 + thickness / 2; // Hauteur maximale de 82
+            int thickness = (int) (4 * edgeFactor);
+            return 82 + thickness / 2;
         }
         return getMinimumY();
     }
@@ -206,7 +227,6 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
         int sampleHeight = Math.max(0, height - getMinimumY() + 1);
         BlockState[] states = new BlockState[sampleHeight];
 
-        // Remplir l'échantillon avec les bons blocs
         for (int i = 0; i < sampleHeight; i++) {
             states[i] = Blocks.END_STONE.getDefaultState();
         }
@@ -219,7 +239,4 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
         text.add("ChimerasDimension Generator");
         text.add("Island Radius: 64 blocks");
     }
-
-
-    // -20 tp 
 }

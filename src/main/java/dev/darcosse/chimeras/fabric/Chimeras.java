@@ -1,6 +1,9 @@
 package dev.darcosse.chimeras.fabric;
 
+import dev.darcosse.chimeras.fabric.handler.UnbreakableBlocksHandler;
+import dev.darcosse.chimeras.fabric.handler.VoidFallHandler;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.MapColor;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
@@ -13,10 +16,13 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
+
+import java.util.Random;
 
 public class Chimeras implements ModInitializer {
     public static final String MOD_ID = "cobblemon_chimeras";
@@ -47,10 +53,30 @@ public class Chimeras implements ModInitializer {
                     .luminance(10)
     );
 
+    private int tickCounter = 0;
+    private static final int CHECK_INTERVAL = 200; // En tick (5s)
+
+    private void onServerTick(MinecraftServer server) {
+        tickCounter++;
+        if (tickCounter % CHECK_INTERVAL != 0) {
+            return;
+        }
+
+        server.getWorlds().forEach(world -> {
+            Random javaRandom = new Random();
+            ChimerasPortalBlock.tryRandomSpawn(world, javaRandom);
+        });
+    }
+
     @Override
     public void onInitialize() {
 
+        ModBiomes.register();
         ChimerasRegistry.initialize();
+        VoidFallHandler.initialize();
+        UnbreakableBlocksHandler.initialize();
+
+        ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
 
         Registry.register(
                 Registries.CHUNK_GENERATOR,
