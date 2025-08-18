@@ -1,0 +1,71 @@
+{
+    "portraitScale": 0.3,
+    "portraitTranslation": [ 0, 2, 0 ],
+    "profileScale": 0.25,
+    "profileTranslation": [ 0, 1.5, 0 ],
+ "animations": {
+   "faint": "q.bedrock_primary('celesteela', 'faint', q.curve('one'))",
+   "cry": "q.bedrock_stateful('celesteela', 'cry')",
+   "recoil": "q.bedrock_stateful('celesteela', 'recoil')",
+   "physical": "q.bedrock_primary('celesteela', 'physical', q.curve('symmetrical_wide'))",
+   "special": "q.bedrock_primary('celesteela', 'special', q.curve('symmetrical_wide'))",
+   "status": "q.bedrock_primary('celesteela', 'status', q.curve('symmetrical_wide'))"
+ },
+ "poses": {
+   "battle-standing": {
+     "poseTypes": ["STAND"],
+     "isBattle": true,
+     "animations": [
+       "q.look('actualhead', 1, 1, 10, -10, 60, -60))",
+       "q.bedrock('celesteela', 'ground_idle')"
+     ]
+   },
+   "standing": {
+     "poseTypes": ["STAND", "NONE", "PORTRAIT", "PROFILE"],
+     "isBattle": false,
+     "animations": [
+       "q.look('actualhead', 1, 1, 10, -10, 60, -60))",
+       "q.bedrock('celesteela', 'ground_idle')"
+     ]
+   },
+   "walking": {
+     "poseTypes": ["WALK"],
+     "animations": [
+       "q.look('actualhead', 1, 1, 10, -10, 60, -60))",
+       "q.bedrock('celesteela', 'ground_walk')"
+     ]
+   },
+   "hover": {
+     "poseTypes": ["HOVER"],
+     "animations": [
+       "q.look('actualhead', 1, 1, 0, 0, 60, -60))",
+       "q.bedrock('celesteela', 'air_fly')"
+     ]
+   },
+   "fly": {
+     "poseTypes": ["FLY"],
+     "animations": [
+       "q.look('actualhead', 1, 1, 0, 0, 60, -60))",
+       "q.bedrock('celesteela', 'air_fly')"
+     ]
+   },
+   "float": {
+     "poseTypes": ["FLOAT"],
+     "animations": [
+       "q.look('actualhead', 1, 1, 0, 0, 60, -60))",
+       "q.bedrock('celesteela', 'air_fly')"
+     ]
+   },
+   "swim": {
+     "poseTypes": ["SWIM"],
+     "animations": [
+       "q.look('actualhead', 1, 1, 0, 0, 60, -60))",
+       "q.bedrock('celesteela', 'air_fly')"
+     ]
+   },
+   "sleep": {
+     "poseTypes": ["SLEEP"],
+     "animations": ["q.bedrock('celesteela', 'sleep')"]
+   }
+ }
+}

@@ -1,0 +1,10 @@
+{
+  "implemented": true,
+  "baseScale": 1,
+  "target": "cobblemon:nihilego",
+  "hitbox": {
+    "width": 1.5,
+    "height": 4,
+    "fixed": false
+  }
+}

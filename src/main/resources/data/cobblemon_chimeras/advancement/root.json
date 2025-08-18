@@ -1,0 +1,18 @@
+{
+  "display": {
+    "icon": {
+      "id": "minecraft:ender_pearl"
+    },
+    "title": "Cobblemon Wormhole",
+    "description": "Discover the mysteries of Ultra Beasts",
+    "background": "minecraft:textures/gui/advancements/backgrounds/end.png",
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "impossible": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}
