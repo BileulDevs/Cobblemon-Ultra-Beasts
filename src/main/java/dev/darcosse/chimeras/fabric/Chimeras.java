@@ -1,5 +1,7 @@
 package dev.darcosse.chimeras.fabric;
 
+import dev.darcosse.chimeras.fabric.commands.ChimerasCommands;
+import dev.darcosse.chimeras.fabric.config.ConfigManager;
 import dev.darcosse.chimeras.fabric.handler.UnbreakableBlocksHandler;
 import dev.darcosse.chimeras.fabric.handler.VoidFallHandler;
 import net.fabricmc.api.ModInitializer;
@@ -42,7 +44,7 @@ public class Chimeras implements ModInitializer {
                     .mapColor(MapColor.BLACK)
                     .strength(50.0f, 1200.0f)
                     .sounds(BlockSoundGroup.GLASS)
-                    .luminance(10)
+                    .luminance(15)
     );
 
     public static final Block CHIMERAS_CORE_BLOCK = new ChimerasCoreBlock(
@@ -50,7 +52,7 @@ public class Chimeras implements ModInitializer {
                     .mapColor(MapColor.BLACK)
                     .strength(50.0f, 1200.0f)
                     .sounds(BlockSoundGroup.GLASS)
-                    .luminance(10)
+                    .luminance(15)
     );
 
     private int tickCounter = 0;
@@ -70,7 +72,9 @@ public class Chimeras implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        ConfigManager.loadConfig();
 
+        ChimerasCommands.registerCommands();
         ModBiomes.register();
         ChimerasRegistry.initialize();
         VoidFallHandler.initialize();

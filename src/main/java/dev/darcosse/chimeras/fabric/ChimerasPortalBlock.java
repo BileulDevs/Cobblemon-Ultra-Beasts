@@ -1,21 +1,24 @@
 package dev.darcosse.chimeras.fabric;
 
 import com.cobblemon.mod.common.CobblemonEntities;
-import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
+import dev.darcosse.chimeras.fabric.config.ConfigManager;
+import net.minecraft.advancement.Advancement;
+import net.minecraft.advancement.AdvancementEntry;
+import net.minecraft.advancement.AdvancementProgress;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
@@ -24,9 +27,11 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionTypes;
-import net.minecraft.registry.RegistryKey;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 public class ChimerasPortalBlock extends Block {
     private static final VoxelShape SHAPE = createShape();
@@ -37,9 +42,10 @@ public class ChimerasPortalBlock extends Block {
     private static long portalPlacementTime = 0;
 
     // Configuration
-    private static final int LIFESPAN_TICKS = 1200; // 60 secondes (20 ticks/sec * 60)
-    private static final int SOUND_INTERVAL = 100; // 5 secondes entre les sons
-    private static final int SPAWN_CHANCE = 5000;
+    private static final int LIFESPAN_TICKS = 1200;
+    private static final int SOUND_INTERVAL = 100;
+
+    public static final Map<UUID, BlockPos> savedPositions = new HashMap<>();
 
     public ChimerasPortalBlock(Settings settings) {
         super(settings);
@@ -60,25 +66,18 @@ public class ChimerasPortalBlock extends Block {
      * Appelez cette méthode depuis un système de ticks global ou un événement
      */
     public static void tryRandomSpawn(ServerWorld world, Random random) {
-        // Vérifier si on est dans l'overworld
         if (!world.getRegistryKey().equals(World.OVERWORLD)) {
             return;
         }
 
-        // Vérifier s'il y a déjà un portail actif
         if (hasActivePortal(world)) {
             return;
         }
 
-        // Vérifier la chance de spawn (1 chance sur SPAWN_CHANCE)
-        if (random.nextInt(SPAWN_CHANCE) != 0) {
-            System.out.println("chance tested");
+        if (random.nextInt(ConfigManager.getWormholeSpawnChance()) != 0) {
             return;
         }
 
-        System.out.println("Portal spawn triggered! (1/" + SPAWN_CHANCE + " chance)");
-
-        // Trouver une position aléatoire valide
         BlockPos spawnPos = findValidSpawnLocation(world, random);
         if (spawnPos != null) {
             spawnPortal(world, spawnPos);
@@ -122,7 +121,7 @@ public class ChimerasPortalBlock extends Block {
         // Chercher dans un rayon de 20 blocs autour du joueur
         int searchRadius = 20;
         int attempts = 30;
-        int minHeightAboveGround = 6; // 6 blocs d'air minimum sous le portail
+        int minHeightAboveGround = 6;
 
         for (int i = 0; i < attempts; i++) {
             int x = playerPos.getX() + random.nextInt(searchRadius * 2) - searchRadius;
@@ -362,9 +361,15 @@ public class ChimerasPortalBlock extends Block {
     private void teleportToChimerasDimension(ServerPlayerEntity player) {
         ServerWorld chimerasWorld = player.getServer().getWorld(Chimeras.CHIMERAS_DIMENSION);
         if (chimerasWorld != null) {
+            if (player.getWorld().getRegistryKey().equals(World.OVERWORLD)) {
+                savedPositions.put(player.getUuid(), player.getBlockPos());
+            }
+
             checkAndPlaceChimerasCore(chimerasWorld);
             killAllPokemonsOfWorld(chimerasWorld);
-            player.teleport(chimerasWorld, -0, 83, -22, player.getYaw(), player.getPitch());
+            grantChimerasAdvancement(player);
+
+            player.teleport(chimerasWorld, 0, 83, -22, player.getYaw(), player.getPitch());
             player.sendMessage(Text.translatable("dimension.travel.chimeras"), false);
         }
     }
@@ -395,6 +400,26 @@ public class ChimerasPortalBlock extends Block {
                 pokemonEntity.discard();
                 return false;
             });
+        }
+    }
+
+    private void grantChimerasAdvancement(ServerPlayerEntity player) {
+        // Identifier de votre advancement
+        Identifier advancementId = Identifier.of("cobblemon_chimeras", "enter_chimeras_dimension");
+
+        // Récupérer l'advancement
+        AdvancementEntry advancement = player.getServer().getAdvancementLoader().get(advancementId);
+
+        if (advancement != null) {
+            AdvancementProgress progress = player.getAdvancementTracker().getProgress(advancement);
+
+            // Vérifier si le joueur n'a pas déjà cet advancement
+            if (!progress.isDone()) {
+                // Accorder tous les critères de l'advancement
+                for (String criterion : progress.getUnobtainedCriteria()) {
+                    player.getAdvancementTracker().grantCriterion(advancement, criterion);
+                }
+            }
         }
     }
 }

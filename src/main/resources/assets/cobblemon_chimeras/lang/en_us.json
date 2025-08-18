@@ -1,3 +1,14 @@
 {
-  "dimension.travel.chimeras": "You have traveled several light-years, where are you?"
+  "dimension.travel.chimeras": "You have traveled several light-years, where are you?",
+  "command.chimeras.reload.success": "§aConfiguration reloaded successfully!",
+  "command.chimeras.reload.rate": "§7New wormhole rate: §e1/%s",
+  "command.chimeras.reload.error": "§cError while reloading: %s",
+  "command.chimeras.reload.success_short": "§aConfig reloaded! Rate: 1/%s",
+  "command.chimeras.info.header": "§6=== Wormhole Info ===",
+  "command.chimeras.info.rate": "§7Current rate: §e1/%s §7(§e%s%%§7)",
+  "command.chimeras.info.rate_short": "§eWormhole rate: 1/%s",
+  "block.cobblemon_chimeras.chimeras_portal": "Ultra Beast Wormhole",
+  "block.cobblemon_chimeras.chimeras_core": "Ultra Beast Core",
+  "advancement.cobblemon_chimeras.enter_chimeras_dimension.title": "Into the Unknown",
+  "advancement.cobblemon_chimeras.enter_chimeras_dimension.description": "Enter the mysterious Wormhole"
 }

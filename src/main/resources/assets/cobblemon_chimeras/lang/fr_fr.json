@@ -1,3 +1,14 @@
 {
-  "dimension.travel.chimeras": "Vous avez voyagé plusieurs années lumières, où êtes-vous ?"
+  "dimension.travel.chimeras": "Vous avez voyagé plusieurs années lumières, où êtes-vous ?",
+  "command.chimeras.reload.success": "§aConfiguration rechargée avec succès !",
+  "command.chimeras.reload.rate": "§7Nouveau taux de Trou de ver: §e1/%s",
+  "command.chimeras.reload.error": "§cErreur lors du rechargement: %s",
+  "command.chimeras.reload.success_short": "§aConfig rechargée ! Taux: 1/%s",
+  "command.chimeras.info.header": "§6=== Info Trou de ver ===",
+  "command.chimeras.info.rate": "§7Taux actuel: §e1/%s §7(§e%s%%§7)",
+  "command.chimeras.info.rate_short": "§eTaux Trou de ver: 1/%s",
+  "block.cobblemon_chimeras.chimeras_portal": "Trou de ver d'Ultra Chimère",
+  "block.cobblemon_chimeras.chimeras_core": "Noyau de Chimère",
+  "advancement.cobblemon_chimeras.enter_chimeras_dimension.title": "Vers l'Inconnu",
+  "advancement.cobblemon_chimeras.enter_chimeras_dimension.description": "Entrez dans le mystérieux Trou de ver"
 }

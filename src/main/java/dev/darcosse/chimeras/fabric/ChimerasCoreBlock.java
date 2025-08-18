@@ -29,14 +29,37 @@ import java.util.stream.Collectors;
 
 public class ChimerasCoreBlock extends Block {
 
-    // Définition des formes pour chaque élément du cristal
-    private static final VoxelShape BASE_SHAPE = Block.createCuboidShape(6.5, 4, 6, 9.5, 5.5, 10);
-    private static final VoxelShape CORE_SHAPE = Block.createCuboidShape(6, 5.5, 6.5, 10, 10.5, 9.5);
-    private static final VoxelShape TIP_SHAPE = Block.createCuboidShape(7, 10, 7, 9, 12, 9);
-    private static final VoxelShape SHARD1_SHAPE = Block.createCuboidShape(5, 7, 7, 6, 9, 8);
-    private static final VoxelShape SHARD2_SHAPE = Block.createCuboidShape(10, 8, 7, 11, 10, 8.5);
+    // Base
+    private static final VoxelShape BASE_SHAPE = Block.createCuboidShape(
+            6.5, 2, 6,   // from
+            10.5, 5.5, 10 // to
+    );
 
-    // Combinaison de toutes les formes en une seule hitbox
+    // Core (middle crystal)
+    private static final VoxelShape CORE_SHAPE = Block.createCuboidShape(
+            4, 4.5, 6.5,
+            12, 13.5, 9.5
+    );
+
+    // Tip (top crystal)
+    private static final VoxelShape TIP_SHAPE = Block.createCuboidShape(
+            6, 10, 7,
+            10, 16, 9
+    );
+
+    // Shard 1 (left side)
+    private static final VoxelShape SHARD1_SHAPE = Block.createCuboidShape(
+            2, 5, 7,
+            6, 9, 8
+    );
+
+    // Shard 2 (right side)
+    private static final VoxelShape SHARD2_SHAPE = Block.createCuboidShape(
+            10, 8, 7,
+            14, 12, 8.5
+    );
+
+    // Combine all
     private static final VoxelShape CRYSTAL_SHAPE = VoxelShapes.union(
             BASE_SHAPE,
             CORE_SHAPE,

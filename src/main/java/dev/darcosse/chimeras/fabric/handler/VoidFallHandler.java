@@ -3,6 +3,7 @@ package dev.darcosse.chimeras.fabric.handler;
 import dev.darcosse.chimeras.fabric.ChimerasPortalBlock;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -18,6 +19,8 @@ import net.minecraft.world.World;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+
+import static dev.darcosse.chimeras.fabric.ChimerasPortalBlock.savedPositions;
 
 public class VoidFallHandler {
 
@@ -60,8 +63,6 @@ public class VoidFallHandler {
         player.getWorld().playSound(null, player.getBlockPos(),
                 SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.0f, 1.0f);
 
-        player.sendMessage(Text.literal("Vous voyagez à travers les dimensions..."), false);
-
         ((ServerWorld) player.getWorld()).spawnParticles(
                 ParticleTypes.PORTAL,
                 player.getX(), player.getY(), player.getZ(),
@@ -74,17 +75,27 @@ public class VoidFallHandler {
     private static void handleChimeraVoidFall(ServerPlayerEntity player) {
         ChimerasPortalBlock.killAllPokemonsOfWorld((ServerWorld) player.getWorld());
         ChimerasPortalBlock.checkAndPlaceChimerasCore((ServerWorld) player.getWorld());
-        teleportToChimerasBiome(player);
+        teleportBackToOverworld(player);
     }
 
-    private static void teleportToChimerasBiome(ServerPlayerEntity player) {
-        ServerWorld world = player.getServerWorld();
+    private static void teleportBackToOverworld(ServerPlayerEntity player) {
+        BlockPos savedPos = savedPositions.get(player.getUuid());
 
-        BlockPos spawnPos = new BlockPos(0, 86, -22);
-        player.teleport(world, spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5, 0, 0);
+        if (savedPos != null) {
+            ServerWorld overworldWorld = player.getServer().getOverworld();
+            player.teleport(overworldWorld, savedPos.getX() + 0.5, savedPos.getY(), savedPos.getZ() + 0.5, 0, 0);
 
-        world.spawnParticles(ParticleTypes.REVERSE_PORTAL,
-                player.getX(), player.getY() + 1, player.getZ(),
-                30, 0.5, 1, 0.5, 0.1);
+            overworldWorld.spawnParticles(ParticleTypes.PORTAL,
+                    player.getX(), player.getY() + 1, player.getZ(),
+                    30, 0.5, 1, 0.5, 0.1);
+
+            savedPositions.remove(player.getUuid());
+
+        } else {
+            ServerWorld overworldWorld = player.getServer().getOverworld();
+            BlockPos worldSpawn = overworldWorld.getSpawnPos();
+            player.teleport(overworldWorld,
+                    worldSpawn.getX() + 0.5, worldSpawn.getY(), worldSpawn.getZ() + 0.5, 0, 0);
+        }
     }
 }

@@ -2,6 +2,8 @@ package dev.darcosse.chimeras.fabric;
 
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.block.AmethystClusterBlock;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.registry.RegistryKey;
@@ -12,6 +14,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.*;
 import net.minecraft.world.biome.*;
 import net.minecraft.world.biome.source.BiomeSource;
@@ -136,21 +139,32 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
                         chunk.setBlockState(new BlockPos(x, y, z), blockState, false);
                     }
 
-                    // Génération des cristaux avec zones d'exclusion
                     if (shouldGenerateCrystal(worldX, worldZ, distanceFromCenter, islandRadius)) {
-                        int crystalHeight = 2 + (int)(Math.random() * 3);
-                        for (int i = 1; i <= crystalHeight; i++) {
-                            if (i <= 1) {
-                                chunk.setBlockState(new BlockPos(x, flatTopY + i, z), Blocks.PRISMARINE.getDefaultState(), false);
-                            } else {
-                                chunk.setBlockState(new BlockPos(x, flatTopY + i, z), Blocks.SEA_LANTERN.getDefaultState(), false);
+                        // VÉRIFIER QU'IL Y A UN BLOC SOLIDE EN DESSOUS
+                        BlockPos groundPos = new BlockPos(x, flatTopY, z);
+                        if (!chunk.getBlockState(groundPos).isAir()) { // Vérifier que le sol existe
+
+                            int crystalHeight = 2 + (int)(Math.random() * 3);
+
+                            for (int i = 1; i <= crystalHeight; i++) {
+                                BlockPos crystalPos = new BlockPos(x, flatTopY + i, z);
+
+                                if (i == crystalHeight) {
+                                    chunk.setBlockState(crystalPos,
+                                            Blocks.AMETHYST_CLUSTER.getDefaultState()
+                                                    .with(AmethystClusterBlock.FACING, Direction.UP),
+                                            false);
+                                } else {
+                                    // Corps : blocs d'améthyste
+                                    chunk.setBlockState(crystalPos, Blocks.BUDDING_AMETHYST.getDefaultState(), false);
+                                }
                             }
                         }
                     }
 
                     if (worldX == 0 && worldZ == 0) {
                         BlockPos pillar = new BlockPos(x, flatTopY + 1, z);
-                        chunk.setBlockState(pillar, Blocks.QUARTZ_PILLAR.getDefaultState(), false);
+                        chunk.setBlockState(pillar, Blocks.LODESTONE.getDefaultState(), false);
 
                         BlockPos chimerasCore = new BlockPos(x, flatTopY + 2, z);
                         chunk.setBlockState(chimerasCore, Chimeras.CHIMERAS_CORE_BLOCK.getDefaultState(), false);
@@ -158,7 +172,7 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
                 }
 
                 if (distanceFromCenter > islandRadius + 10 && distanceFromCenter < islandRadius + 25) {
-                    if (Math.random() < 0.002) { // Très rare
+                    if (Math.random() < 0.002) {
                         int smallIslandSize = 2 + (int)(Math.random() * 3);
                         int floatingY = centerY + 10 + (int)(Math.random() * 20);
 
@@ -185,24 +199,79 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
 
     // Méthode pour déterminer si un cristal peut être généré
     private boolean shouldGenerateCrystal(int worldX, int worldZ, double distanceFromCenter, int islandRadius) {
-        if (distanceFromCenter >= islandRadius * 0.5 || Math.random() >= 0.03) {
-            return false;
-        }
+        // Zone d'exclusion autour du spawn (cercle rouge sur votre image)
+        double spawnX = 0;
+        double spawnZ = -22;
+        double spawnExclusionRadius = 12;
 
-        double distanceFromCenterWorld = Math.sqrt(worldX * worldX + worldZ * worldZ);
-        if (distanceFromCenterWorld <= 10) {
-            return false;
-        }
-
-        double spawnX = -0.5;
-        double spawnZ = -22.5;
         double distanceFromSpawn = Math.sqrt(Math.pow(worldX - spawnX, 2) + Math.pow(worldZ - spawnZ, 2));
 
-        if (distanceFromSpawn <= 10) {
+        // Ne pas spawner près du spawn
+        if (distanceFromSpawn <= spawnExclusionRadius) {
             return false;
         }
 
-        return true;
+        // Ne pas spawner au centre de l'île (0,0)
+        double distanceFromIslandCenter = Math.sqrt(worldX * worldX + worldZ * worldZ);
+        if (distanceFromIslandCenter <= 8) {
+            return false;
+        }
+
+        // Zone de génération : anneau extérieur de l'île
+        double innerBoundary = islandRadius * 0.65;  // 65% du rayon
+        double outerBoundary = islandRadius * 0.90;  // 90% du rayon
+
+        if (distanceFromCenter < innerBoundary || distanceFromCenter > outerBoundary) {
+            return false;
+        }
+
+        // Probabilité de spawn
+        return Math.random() < 0.06; // 6% de chance
+    }
+
+    private void addSideBudsCorrect(Chunk chunk, int x, int baseY, int z, int crystalHeight) {
+        Direction[] horizontalDirections = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
+
+        // Ajouter 1-2 bourgeons latéraux
+        int budCount = 1 + (int)(Math.random() * 2);
+
+        for (int i = 0; i < budCount; i++) {
+            // Choisir une direction aléatoire
+            Direction direction = horizontalDirections[(int)(Math.random() * horizontalDirections.length)];
+
+            // Choisir une hauteur sur le cristal (pas à la base, pas au sommet)
+            int budHeight = Math.max(2, Math.min(crystalHeight, 2 + (int)(Math.random() * (crystalHeight - 1))));
+
+            // Position du bourgeon : ADJACENT au cristal, pas dedans
+            BlockPos budBasePos = new BlockPos(x, baseY + budHeight, z);
+            BlockPos budPos = budBasePos.offset(direction);
+
+            // Vérifier que la position est libre ET qu'il y a un bloc support
+            if (budPos.getX() >= 0 && budPos.getX() < 16 &&
+                    budPos.getZ() >= 0 && budPos.getZ() < 16 &&
+                    chunk.getBlockState(budPos).isAir() &&
+                    !chunk.getBlockState(budBasePos).isAir()) { // Le cristal doit exister comme support
+
+                // Choisir le type de bourgeon
+                Block budBlock;
+                double rand = Math.random();
+                if (rand < 0.3) {
+                    budBlock = Blocks.LARGE_AMETHYST_BUD;
+                } else if (rand < 0.7) {
+                    budBlock = Blocks.MEDIUM_AMETHYST_BUD;
+                } else {
+                    budBlock = Blocks.SMALL_AMETHYST_BUD;
+                }
+
+                // IMPORTANT : Le bourgeon pointe VERS le cristal (direction opposée)
+                Direction budFacing = direction.getOpposite();
+
+                chunk.setBlockState(budPos,
+                        budBlock.getDefaultState()
+                                .with(AmethystClusterBlock.FACING, budFacing),
+                        false);
+            }
+        }
     }
 
     @Override

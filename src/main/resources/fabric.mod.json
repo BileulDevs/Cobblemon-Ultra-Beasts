@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "cobblemon_chimeras",
   "version": "${version}",
-  "name": "Cobblemon Chimeras",
-  "description": "A mod that allows Ultra Beasts to spawn in their dimension",
+  "name": "Cobblemon Wormhole",
+  "description": "A mod that adds all Ultra Beasts and a dimension",
   "authors": [
     "Darcosse"
   ],
