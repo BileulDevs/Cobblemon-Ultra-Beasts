@@ -10,5 +10,8 @@
   "block.cobblemon_chimeras.chimeras_portal": "Trou de ver d'Ultra Chimère",
   "block.cobblemon_chimeras.chimeras_core": "Noyau de Chimère",
   "advancement.cobblemon_chimeras.enter_chimeras_dimension.title": "Vers l'Inconnu",
-  "advancement.cobblemon_chimeras.enter_chimeras_dimension.description": "Entrez dans le mystérieux Trou de ver"
+  "advancement.cobblemon_chimeras.enter_chimeras_dimension.description": "Entrez dans le mystérieux Trou de ver",
+  "advancement.ultra_beast_master.title": "Maître de l'Ultra-Espace",
+  "advancement.ultra_beast_master.description": "Capturez toutes les Ultra-Chimères",
+  "message.cobblemon_chimeras.portal_spawn": "§5Vous ressentez l'appel du vide.."
 }

@@ -2,8 +2,11 @@ package dev.darcosse.chimeras.fabric;
 
 import dev.darcosse.chimeras.fabric.commands.ChimerasCommands;
 import dev.darcosse.chimeras.fabric.config.ConfigManager;
+import dev.darcosse.chimeras.fabric.events.EventsHandler;
 import dev.darcosse.chimeras.fabric.handler.UnbreakableBlocksHandler;
 import dev.darcosse.chimeras.fabric.handler.VoidFallHandler;
+import dev.darcosse.chimeras.fabric.registry.ModBlockSoundGroups;
+import dev.darcosse.chimeras.fabric.registry.ModSounds;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.MapColor;
@@ -23,6 +26,8 @@ import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Random;
 
@@ -43,7 +48,7 @@ public class Chimeras implements ModInitializer {
             FabricBlockSettings.create()
                     .mapColor(MapColor.BLACK)
                     .strength(50.0f, 1200.0f)
-                    .sounds(BlockSoundGroup.GLASS)
+                    .sounds(ModBlockSoundGroups.PORTAL_SOUNDS)
                     .luminance(15)
     );
 
@@ -51,7 +56,7 @@ public class Chimeras implements ModInitializer {
             FabricBlockSettings.create()
                     .mapColor(MapColor.BLACK)
                     .strength(50.0f, 1200.0f)
-                    .sounds(BlockSoundGroup.GLASS)
+                    .sounds(BlockSoundGroup.HEAVY_CORE)
                     .luminance(15)
     );
 
@@ -70,15 +75,19 @@ public class Chimeras implements ModInitializer {
         });
     }
 
+    public static Logger LOGGER = LogManager.getLogger(MOD_ID);
+
     @Override
     public void onInitialize() {
         ConfigManager.loadConfig();
 
         ChimerasCommands.registerCommands();
+        ModSounds.registerSounds();
         ModBiomes.register();
         ChimerasRegistry.initialize();
         VoidFallHandler.initialize();
         UnbreakableBlocksHandler.initialize();
+        EventsHandler.initializeEvents();
 
         ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
 

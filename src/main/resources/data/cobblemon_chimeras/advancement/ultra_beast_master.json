@@ -1,0 +1,70 @@
+{
+  "display": {
+    "icon": {
+      "id": "cobblemon:beast_ball"
+    },
+    "title": {
+      "translate": "advancement.ultra_beast_master.title"
+    },
+    "description": {
+      "translate": "advancement.ultra_beast_master.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "cobblemon_chimeras:enter_dimension",
+  "criteria": {
+    "buzzwole": {
+      "trigger": "minecraft:impossible"
+    },
+    "pheromosa": {
+      "trigger": "minecraft:impossible"
+    },
+    "xurkitree": {
+      "trigger": "minecraft:impossible"
+    },
+    "celesteela": {
+      "trigger": "minecraft:impossible"
+    },
+    "kartana": {
+      "trigger": "minecraft:impossible"
+    },
+    "guzzlord": {
+      "trigger": "minecraft:impossible"
+    },
+    "poipole": {
+      "trigger": "minecraft:impossible"
+    },
+    "naganadel": {
+      "trigger": "minecraft:impossible"
+    },
+    "nihilego": {
+      "trigger": "minecraft:impossible"
+    },
+    "stakataka": {
+      "trigger": "minecraft:impossible"
+    },
+    "blacephalon": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    ["buzzwole"],
+    ["pheromosa"],
+    ["xurkitree"],
+    ["celesteela"],
+    ["kartana"],
+    ["guzzlord"],
+    ["poipole"],
+    ["nihilego"],
+    ["naganadel"],
+    ["stakataka"],
+    ["blacephalon"]
+  ],
+  "rewards": {
+    "experience": 500
+  },
+  "sends_telemetry_event": false
+}

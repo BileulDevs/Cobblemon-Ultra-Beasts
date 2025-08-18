@@ -1,0 +1,18 @@
+{
+  "portal_spawn": {
+    "sounds": [
+      {
+        "name": "cobblemon_chimeras:portal_spawn",
+        "stream": false
+      }
+    ]
+  },
+  "portal_ambient": {
+    "sounds": [
+      {
+        "name": "cobblemon_chimeras:portal_ambient",
+        "stream": true
+      }
+    ]
+  }
+}

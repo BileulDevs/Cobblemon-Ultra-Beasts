@@ -10,5 +10,8 @@
   "block.cobblemon_chimeras.chimeras_portal": "Ultra Beast Wormhole",
   "block.cobblemon_chimeras.chimeras_core": "Ultra Beast Core",
   "advancement.cobblemon_chimeras.enter_chimeras_dimension.title": "Into the Unknown",
-  "advancement.cobblemon_chimeras.enter_chimeras_dimension.description": "Enter the mysterious Wormhole"
+  "advancement.cobblemon_chimeras.enter_chimeras_dimension.description": "Enter the mysterious Wormhole",
+  "advancement.ultra_beast_master.title": "Ultra-Space Master",
+  "advancement.ultra_beast_master.description": "Catch all Ultra-Beasts",
+  "message.cobblemon_chimeras.portal_spawn": "§5You feel the call of the void.."
 }

@@ -2,7 +2,7 @@ package dev.darcosse.chimeras.fabric;
 
 import com.cobblemon.mod.common.CobblemonEntities;
 import dev.darcosse.chimeras.fabric.config.ConfigManager;
-import net.minecraft.advancement.Advancement;
+import dev.darcosse.chimeras.fabric.registry.ModSounds;
 import net.minecraft.advancement.AdvancementEntry;
 import net.minecraft.advancement.AdvancementProgress;
 import net.minecraft.block.Block;
@@ -11,7 +11,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -36,14 +35,12 @@ import java.util.UUID;
 public class ChimerasPortalBlock extends Block {
     private static final VoxelShape SHAPE = createShape();
 
-    // Variables statiques pour gérer l'instance unique
     private static BlockPos activePortalPos = null;
     private static ServerWorld activePortalWorld = null;
     private static long portalPlacementTime = 0;
 
-    // Configuration
     private static final int LIFESPAN_TICKS = 1200;
-    private static final int SOUND_INTERVAL = 100;
+    private static final int SOUND_INTERVAL = 200;
 
     public static final Map<UUID, BlockPos> savedPositions = new HashMap<>();
 
@@ -93,10 +90,8 @@ public class ChimerasPortalBlock extends Block {
             return false;
         }
 
-        // Vérifier si le bloc existe encore à cette position
         BlockState state = world.getBlockState(activePortalPos);
         if (!(state.getBlock() instanceof ChimerasPortalBlock)) {
-            // Le portail n'existe plus, nettoyer les variables
             clearActivePortal();
             return false;
         }
@@ -108,17 +103,14 @@ public class ChimerasPortalBlock extends Block {
      * Trouve une position valide pour faire spawner le portail
      */
     private static BlockPos findValidSpawnLocation(ServerWorld world, Random random) {
-        // Obtenir des joueurs connectés pour spawner près d'eux
         if (world.getPlayers().isEmpty()) {
             return null;
         }
 
-        // Choisir un joueur aléatoire
         var players = world.getPlayers();
         var randomPlayer = players.get(random.nextInt(players.size()));
         BlockPos playerPos = randomPlayer.getBlockPos();
 
-        // Chercher dans un rayon de 20 blocs autour du joueur
         int searchRadius = 20;
         int attempts = 30;
         int minHeightAboveGround = 6;
@@ -127,13 +119,10 @@ public class ChimerasPortalBlock extends Block {
             int x = playerPos.getX() + random.nextInt(searchRadius * 2) - searchRadius;
             int z = playerPos.getZ() + random.nextInt(searchRadius * 2) - searchRadius;
 
-            // Trouver la surface du monde à cette position
             BlockPos surfacePos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos(x, world.getTopY(), z));
 
-            // Calculer la position de spawn à 6+ blocs au-dessus de la surface
             BlockPos spawnPos = surfacePos.up(minHeightAboveGround);
 
-            // Vérifier si la position est valide (6 blocs d'air en dessous + 2 au-dessus)
             if (isValidAirSpawnLocation(world, spawnPos, minHeightAboveGround)) {
                 return spawnPos;
             }
@@ -146,7 +135,6 @@ public class ChimerasPortalBlock extends Block {
      * Vérifie si une position est valide pour le spawn en l'air
      */
     private static boolean isValidAirSpawnLocation(ServerWorld world, BlockPos pos, int airBlocksBelow) {
-        // Vérifier l'espace en dessous (pour que le portail soit suspendu)
         for (int i = 1; i <= airBlocksBelow; i++) {
             BlockPos checkPos = pos.down(i);
             if (!world.getBlockState(checkPos).isAir()) {
@@ -154,8 +142,7 @@ public class ChimerasPortalBlock extends Block {
             }
         }
 
-        // Vérifier l'espace au-dessus (pour que le portail ne soit pas obstrué)
-        for (int i = 0; i < 3; i++) { // 3 blocs de hauteur pour le portail
+        for (int i = 0; i < 3; i++) {
             BlockPos checkPos = pos.up(i);
             if (!world.getBlockState(checkPos).isAir()) {
                 return false;
@@ -169,23 +156,35 @@ public class ChimerasPortalBlock extends Block {
      * Fait spawner le portail à la position donnée
      */
     private static void spawnPortal(ServerWorld world, BlockPos pos) {
-        // Placer le bloc
         world.setBlockState(pos, Chimeras.CHIMERAS_PORTAL_BLOCK.getDefaultState());
 
-        // Effet visuel et sonore pour le spawn
         world.playSound(
                 null,
                 pos,
-                SoundEvents.ENTITY_ENDER_DRAGON_GROWL,
+                ModSounds.PORTAL_SPAWN,
                 SoundCategory.BLOCKS,
-                3.0f,  // Volume augmenté (porte naturellement plus loin)
+                6.0f,
                 0.8f
         );
 
-        // Enregistrer comme portail actif
         activePortalPos = pos;
         activePortalWorld = world;
         portalPlacementTime = world.getTime();
+
+        ServerPlayerEntity nearestPlayer = (ServerPlayerEntity) world.getClosestPlayer(
+                pos.getX() + 0.5,
+                pos.getY() + 0.5,
+                pos.getZ() + 0.5,
+                64.0,
+                false
+        );
+
+        if (nearestPlayer != null) {
+            nearestPlayer.sendMessage(
+                    Text.translatable("message.cobblemon_chimeras.portal_spawn"),
+                    true
+            );
+        }
     }
 
     /**
@@ -200,50 +199,20 @@ public class ChimerasPortalBlock extends Block {
     private static VoxelShape createShape() {
         VoxelShape shape = VoxelShapes.empty();
 
-        // Main frame elements (outer border)
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(1, 1, 14, 2, 14, 15)); // Left vertical
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(2, 1, 14, 14, 2, 15)); // Bottom horizontal
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(14, 1, 14, 15, 14, 15)); // Right vertical
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(1, 14, 14, 15, 15, 15)); // Top horizontal
+        // Élément 1
+        shape = VoxelShapes.union(shape, Block.createCuboidShape(2.5, 1, 6, 10.5, 5.5, 10));
 
-        // Inner frame elements (second layer)
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(2, 2, 13, 3, 9, 14)); // Left inner vertical
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(3, 2, 13, 14, 3, 14)); // Bottom inner horizontal
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(13, 3, 13, 14, 13, 14)); // Right inner vertical
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(2, 13, 13, 14, 14, 14)); // Top inner horizontal
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(2, 9, 13, 3, 13, 14)); // Left inner vertical upper
+        // Élément 2
+        shape = VoxelShapes.union(shape, Block.createCuboidShape(4, 1.5, 6.5, 13, 13.5, 9.5));
 
-        // Third layer frame
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(3, 3, 12, 12, 4, 13)); // Bottom third layer
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(3, 4, 12, 4, 12, 13)); // Left third layer
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(12, 3, 12, 13, 12, 13)); // Right third layer
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(3, 12, 12, 13, 13, 13)); // Top third layer
+        // Élément 3
+        shape = VoxelShapes.union(shape, Block.createCuboidShape(6, 10, 7, 15, 15, 9));
 
-        // Fourth layer frame
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(4, 4, 11, 11, 5, 12)); // Bottom fourth layer
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(4, 5, 11, 5, 10, 12)); // Left fourth layer
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(11, 4, 11, 12, 11, 12)); // Right fourth layer
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(4, 11, 11, 12, 12, 12)); // Top fourth layer
+        // Élément 4
+        shape = VoxelShapes.union(shape, Block.createCuboidShape(1, 7, 7, 5, 16, 8));
 
-        // Main portal structure (depth layers)
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(5, 5, 8, 11, 11, 11)); // Main portal area
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(6, 5, 8, 10, 6, 11)); // Bottom connector
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(5, 6, 8, 6, 10, 11)); // Left connector
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(10, 5, 8, 11, 10, 11)); // Right connector
-
-        // Portal center elements (decorative inner parts)
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(6, 5, 8, 10, 11, 11)); // Center area
-
-        // Front decorative elements (the complex cross-like structure)
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(6, 6, 4, 7, 7, 8)); // Main cross horizontal
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(6, 7, 4, 7, 9, 7)); // Cross vertical part
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(7, 6, 4, 9, 7, 8)); // Cross extension
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(9, 6, 4, 10, 9, 8)); // Right cross part
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(6, 9, 4, 10, 10, 8)); // Top cross part
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(7, 9, 4, 9, 10, 8)); // Top cross extension
-
-        // Additional front projection
-        shape = VoxelShapes.union(shape, Block.createCuboidShape(7, 7, 1, 9, 9, 4)); // Front projection block
+        // Élément 5
+        shape = VoxelShapes.union(shape, Block.createCuboidShape(10, 3, 7, 15, 8, 8.5));
 
         return shape;
     }
@@ -255,25 +224,20 @@ public class ChimerasPortalBlock extends Block {
         if (!world.isClient) {
             ServerWorld serverWorld = (ServerWorld) world;
 
-            // Vérifier si on est dans l'overworld
             if (!world.getDimensionEntry().matchesKey(DimensionTypes.OVERWORLD)) {
-                // Si pas dans l'overworld, supprimer le bloc immédiatement
                 world.setBlockState(pos, Blocks.AIR.getDefaultState());
                 return;
             }
 
-            // Si il y a déjà un portail actif ailleurs, supprimer celui-ci
             if (hasActivePortal(serverWorld) && !pos.equals(activePortalPos)) {
                 world.setBlockState(pos, Blocks.AIR.getDefaultState());
                 return;
             }
 
-            // Enregistrer comme portail actif
             activePortalPos = pos;
             activePortalWorld = serverWorld;
             portalPlacementTime = world.getTime();
 
-            // Programmer les sons et la disparition
             world.scheduleBlockTick(pos, this, SOUND_INTERVAL);
         }
     }
@@ -283,14 +247,12 @@ public class ChimerasPortalBlock extends Block {
         super.onStateReplaced(state, world, pos, newState, moved);
 
         if (!world.isClient && pos.equals(activePortalPos)) {
-            // Nettoyer les variables si c'est le portail actif qui est supprimé
             clearActivePortal();
         }
     }
 
     @Override
     public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, net.minecraft.util.math.random.Random random) {
-        // Vérifier si c'est encore le portail actif
         if (!pos.equals(activePortalPos)) {
             return;
         }
@@ -298,35 +260,30 @@ public class ChimerasPortalBlock extends Block {
         long currentTime = world.getTime();
         long elapsed = currentTime - portalPlacementTime;
 
-        // Vérifier si le portail a atteint sa durée de vie maximale
         if (elapsed >= LIFESPAN_TICKS) {
-            // Jouer un son de disparition
             world.playSound(
                     null,
                     pos,
-                    SoundEvents.BLOCK_PORTAL_AMBIENT,
+                    ModSounds.PORTAL_AMBIENT,
                     SoundCategory.BLOCKS,
                     3.0f,
                     0.8f
             );
 
-            // Supprimer le bloc
             world.setBlockState(pos, Blocks.AIR.getDefaultState());
             clearActivePortal();
             return;
         }
 
-        // Jouer le son périodique
         world.playSound(
                 null,
                 pos,
-                SoundEvents.ENTITY_PLAYER_LEVELUP,
+                ModSounds.PORTAL_AMBIENT,
                 SoundCategory.BLOCKS,
                 3.0f,
                 1.0f
         );
 
-        // Programmer le prochain tick
         world.scheduleBlockTick(pos, this, SOUND_INTERVAL);
     }
 
@@ -369,7 +326,7 @@ public class ChimerasPortalBlock extends Block {
             killAllPokemonsOfWorld(chimerasWorld);
             grantChimerasAdvancement(player);
 
-            player.teleport(chimerasWorld, 0, 83, -22, player.getYaw(), player.getPitch());
+            player.teleport(chimerasWorld, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
             player.sendMessage(Text.translatable("dimension.travel.chimeras"), false);
         }
     }
@@ -404,18 +361,14 @@ public class ChimerasPortalBlock extends Block {
     }
 
     private void grantChimerasAdvancement(ServerPlayerEntity player) {
-        // Identifier de votre advancement
         Identifier advancementId = Identifier.of("cobblemon_chimeras", "enter_chimeras_dimension");
 
-        // Récupérer l'advancement
         AdvancementEntry advancement = player.getServer().getAdvancementLoader().get(advancementId);
 
         if (advancement != null) {
             AdvancementProgress progress = player.getAdvancementTracker().getProgress(advancement);
 
-            // Vérifier si le joueur n'a pas déjà cet advancement
             if (!progress.isDone()) {
-                // Accorder tous les critères de l'advancement
                 for (String criterion : progress.getUnobtainedCriteria()) {
                     player.getAdvancementTracker().grantCriterion(advancement, criterion);
                 }
