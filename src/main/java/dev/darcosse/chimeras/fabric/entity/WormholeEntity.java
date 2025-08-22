@@ -1,0 +1,335 @@
+package dev.darcosse.chimeras.fabric.entity;
+
+import com.cobblemon.mod.common.CobblemonEntities;
+import com.cobblemon.mod.common.api.snowstorm.EventSoundEffect;
+import dev.darcosse.chimeras.fabric.Chimeras;
+import dev.darcosse.chimeras.fabric.config.ConfigManager;
+import dev.darcosse.chimeras.fabric.registry.ModSounds;
+import net.minecraft.advancement.AdvancementEntry;
+import net.minecraft.advancement.AdvancementProgress;
+import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.World;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+
+public class WormholeEntity extends Entity {
+    private static WormholeEntity activeWormhole = null;
+    private static long wormholePlacementTime = 0;
+
+    private static final int LIFESPAN_TICKS = 1200;
+    private static final int SOUND_INTERVAL = 200;
+    private static final int PARTICLE_INTERVAL = 20;
+
+    public static final Map<UUID, BlockPos> savedPositions = new HashMap<>();
+
+    private int soundTimer = 0;
+    private int particleTimer = 0;
+
+    public WormholeEntity(EntityType<? extends WormholeEntity> type, World world) {
+        super(type, world);
+        this.noClip = true;
+        this.setInvulnerable(true);
+    }
+
+    @Override
+    protected void initDataTracker(DataTracker.Builder builder) {
+        // Pas de données spécifiques à tracker pour le moment
+    }
+
+    private static final int AMBIENT_SOUND_LENGTH_TICKS = 26 * 20; // 520 ticks = 26s
+    private int ambientSoundTimer = 0;
+
+    @Override
+    public void tick() {
+        super.tick();
+
+        if (!this.getWorld().isClient) {
+            ServerWorld world = (ServerWorld) this.getWorld();
+            long currentTime = world.getTime();
+            long elapsed = currentTime - wormholePlacementTime;
+
+            // Vérifier la durée de vie
+            if (elapsed >= LIFESPAN_TICKS) {
+                this.discard();
+                clearActiveWormhole();
+                return;
+            }
+
+            // Gestion du son ambiant en boucle
+            ambientSoundTimer++;
+            if (ambientSoundTimer >= AMBIENT_SOUND_LENGTH_TICKS || ambientSoundTimer == 1) {
+                world.playSound(
+                        null,
+                        this.getBlockPos(),
+                        ModSounds.PORTAL_AMBIENT,
+                        SoundCategory.HOSTILE,
+                        0.5f,   // volume
+                        1.0f    // pitch
+                );
+                ambientSoundTimer = 0;
+            }
+
+            // Particules
+            particleTimer++;
+            if (particleTimer >= PARTICLE_INTERVAL) {
+                spawnParticles();
+                particleTimer = 0;
+            }
+        }
+    }
+
+    /**
+     * Méthode statique pour tenter de faire spawner un trou de ver aléatoirement
+     */
+    public static void tryRandomSpawn(ServerWorld world, Random random) {
+        if (!world.getRegistryKey().equals(World.OVERWORLD)) {
+            return;
+        }
+
+        if (hasActiveWormhole(world)) {
+            return;
+        }
+
+        if (random.nextInt(ConfigManager.getWormholeSpawnChance()) != 0) {
+            return;
+        }
+
+        BlockPos spawnPos = findValidSpawnLocation(world, random);
+        if (spawnPos != null) {
+            spawnWormhole(world, spawnPos);
+        }
+    }
+
+    /**
+     * Vérifie s'il y a un trou de ver actif dans le monde
+     */
+    public static boolean hasActiveWormhole(ServerWorld world) {
+        return activeWormhole != null && !activeWormhole.isRemoved() && activeWormhole.getWorld() == world;
+    }
+
+    /**
+     * Trouve une position valide pour faire spawner le trou de ver
+     */
+    private static BlockPos findValidSpawnLocation(ServerWorld world, Random random) {
+        if (world.getPlayers().isEmpty()) {
+            return null;
+        }
+
+        var players = world.getPlayers();
+        var randomPlayer = players.get(random.nextInt(players.size()));
+        BlockPos playerPos = randomPlayer.getBlockPos();
+
+        int searchRadius = 20;
+        int attempts = 30;
+        int minHeightAboveGround = 6;
+
+        for (int i = 0; i < attempts; i++) {
+            int x = playerPos.getX() + random.nextInt(searchRadius * 2) - searchRadius;
+            int z = playerPos.getZ() + random.nextInt(searchRadius * 2) - searchRadius;
+
+            BlockPos surfacePos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE, new BlockPos(x, world.getTopY(), z));
+            BlockPos spawnPos = surfacePos.up(minHeightAboveGround);
+
+            if (isValidAirSpawnLocation(world, spawnPos, minHeightAboveGround)) {
+                return spawnPos;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Vérifie si une position est valide pour le spawn en l'air
+     */
+    private static boolean isValidAirSpawnLocation(ServerWorld world, BlockPos pos, int airBlocksBelow) {
+        for (int i = 1; i <= airBlocksBelow; i++) {
+            BlockPos checkPos = pos.down(i);
+            if (!world.getBlockState(checkPos).isAir()) {
+                return false;
+            }
+        }
+
+        for (int i = 0; i < 3; i++) {
+            BlockPos checkPos = pos.up(i);
+            if (!world.getBlockState(checkPos).isAir()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Fait spawner le trou de ver à la position donnée
+     */
+    private static void spawnWormhole(ServerWorld world, BlockPos pos) {
+        WormholeEntity wormhole = new WormholeEntity(ModEntities.WORMHOLE, world);
+        wormhole.setPosition(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+
+        world.spawnEntity(wormhole);
+
+        world.playSound(
+                null,
+                pos,
+                SoundEvents.BLOCK_BEACON_ACTIVATE,
+                SoundCategory.HOSTILE,
+                3.0f,
+                0.8f
+        );
+
+        activeWormhole = wormhole;
+        wormholePlacementTime = world.getTime();
+
+        ServerPlayerEntity nearestPlayer = (ServerPlayerEntity) world.getClosestPlayer(
+                pos.getX() + 0.5,
+                pos.getY() + 0.5,
+                pos.getZ() + 0.5,
+                64.0,
+                false
+        );
+
+        if (nearestPlayer != null) {
+            nearestPlayer.sendMessage(
+                    Text.translatable("message.cobblemon_chimeras.portal_spawn"),
+                    false
+            );
+        }
+    }
+
+    /**
+     * Nettoie les variables du trou de ver actif
+     */
+    private static void clearActiveWormhole() {
+        activeWormhole = null;
+        wormholePlacementTime = 0;
+    }
+
+    private void spawnParticles() {
+
+    }
+
+    @Override
+    public ActionResult interact(PlayerEntity player, Hand hand) {
+        if (!this.getWorld().isClient && player instanceof ServerPlayerEntity serverPlayer) {
+            teleportToChimerasDimension(serverPlayer);
+
+            this.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+
+            this.discard();
+            clearActiveWormhole();
+
+            return ActionResult.SUCCESS;
+        }
+        return ActionResult.PASS;
+    }
+
+    @Override
+    public void onPlayerCollision(PlayerEntity player) {
+        if (!this.getWorld().isClient && player instanceof ServerPlayerEntity serverPlayer) {
+            teleportToChimerasDimension(serverPlayer);
+        }
+        super.onPlayerCollision(player);
+    }
+
+    private void teleportToChimerasDimension(ServerPlayerEntity player) {
+        ServerWorld chimerasWorld = player.getServer().getWorld(Chimeras.CHIMERAS_DIMENSION);
+        if (chimerasWorld != null) {
+            if (player.getWorld().getRegistryKey().equals(World.OVERWORLD)) {
+                savedPositions.put(player.getUuid(), player.getBlockPos());
+            }
+
+            checkAndPlaceChimerasCore(chimerasWorld);
+            killAllPokemonsOfWorld(chimerasWorld);
+            grantChimerasAdvancement(player);
+
+            player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.5f, 1.0f);
+
+            player.teleport(chimerasWorld, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
+
+            player.sendMessage(Text.translatable("dimension.travel.chimeras"), false);
+        }
+    }
+
+    public static void checkAndPlaceChimerasCore(ServerWorld world) {
+        BlockPos centerPos = new BlockPos(0, 84, 0);
+
+        boolean coreExists = false;
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                BlockPos checkPos = centerPos.add(x, 0, z);
+                if (world.getBlockState(checkPos).isOf(Chimeras.CHIMERAS_CORE_BLOCK)) {
+                    coreExists = true;
+                    break;
+                }
+            }
+            if (coreExists) break;
+        }
+
+        if (!coreExists) {
+            world.setBlockState(centerPos, Chimeras.CHIMERAS_CORE_BLOCK.getDefaultState());
+        }
+    }
+
+    public static void killAllPokemonsOfWorld(ServerWorld chimerasWorld) {
+        if (chimerasWorld != null) {
+            chimerasWorld.getEntitiesByType(CobblemonEntities.POKEMON, pokemonEntity -> {
+                pokemonEntity.discard();
+                return false;
+            });
+        }
+    }
+
+    private void grantChimerasAdvancement(ServerPlayerEntity player) {
+        Identifier advancementId = Identifier.of("cobblemon_chimeras", "enter_chimeras_dimension");
+
+        AdvancementEntry advancement = player.getServer().getAdvancementLoader().get(advancementId);
+
+        if (advancement != null) {
+            AdvancementProgress progress = player.getAdvancementTracker().getProgress(advancement);
+
+            if (!progress.isDone()) {
+                for (String criterion : progress.getUnobtainedCriteria()) {
+                    player.getAdvancementTracker().grantCriterion(advancement, criterion);
+                }
+            }
+        }
+    }
+
+    @Override
+    protected void readCustomDataFromNbt(NbtCompound nbt) {
+        if (nbt.contains("PlacementTime")) {
+            wormholePlacementTime = nbt.getLong("PlacementTime");
+        }
+    }
+
+    @Override
+    protected void writeCustomDataToNbt(NbtCompound nbt) {
+        nbt.putLong("PlacementTime", wormholePlacementTime);
+    }
+
+    @Override
+    public void remove(RemovalReason reason) {
+        super.remove(reason);
+        if (this == activeWormhole) {
+            clearActiveWormhole();
+        }
+    }
+}

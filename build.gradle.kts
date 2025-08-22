@@ -5,7 +5,7 @@ plugins {
     kotlin("jvm") version "1.9.23"
 }
 
-group = "org.example"
+group = "dev.darcosse"
 version = "1.0.0"
 
 architectury {

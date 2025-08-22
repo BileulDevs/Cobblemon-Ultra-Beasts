@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.pokemon.Species;
+import dev.darcosse.chimeras.fabric.registry.ModSounds;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
@@ -147,9 +148,9 @@ public class ChimerasCoreBlock extends Block {
 
     private void destroyChimeraCore(World world, BlockPos pos, ServerPlayerEntity player) {
         player.playSoundToPlayer(
-                SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
-                SoundCategory.BLOCKS,
-                1.0F,
+                ModSounds.CORE_USED,
+                SoundCategory.HOSTILE,
+                4.0F,
                 1.0F
         );
 
@@ -157,10 +158,10 @@ public class ChimerasCoreBlock extends Block {
             serverWorld.getPlayers().forEach(serverPlayer -> {
                 if (serverPlayer.squaredDistanceTo(pos.getX(), pos.getY(), pos.getZ()) < 64 * 64) {
                     serverPlayer.playSoundToPlayer(
-                            SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
-                            SoundCategory.BLOCKS,
-                            1.0F,
-                            1.0F
+                            ModSounds.CORE_USED,
+                            SoundCategory.HOSTILE,
+                            10.0F,
+                            1F
                     );
                 }
             });

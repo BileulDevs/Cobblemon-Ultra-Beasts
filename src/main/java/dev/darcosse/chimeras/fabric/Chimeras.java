@@ -2,6 +2,8 @@ package dev.darcosse.chimeras.fabric;
 
 import dev.darcosse.chimeras.fabric.commands.ChimerasCommands;
 import dev.darcosse.chimeras.fabric.config.ConfigManager;
+import dev.darcosse.chimeras.fabric.entity.ModEntities;
+import dev.darcosse.chimeras.fabric.entity.WormholeEntity;
 import dev.darcosse.chimeras.fabric.events.EventsHandler;
 import dev.darcosse.chimeras.fabric.handler.UnbreakableBlocksHandler;
 import dev.darcosse.chimeras.fabric.handler.VoidFallHandler;
@@ -71,7 +73,7 @@ public class Chimeras implements ModInitializer {
 
         server.getWorlds().forEach(world -> {
             Random javaRandom = new Random();
-            ChimerasPortalBlock.tryRandomSpawn(world, javaRandom);
+            WormholeEntity.tryRandomSpawn(world, javaRandom);
         });
     }
 
@@ -88,6 +90,7 @@ public class Chimeras implements ModInitializer {
         VoidFallHandler.initialize();
         UnbreakableBlocksHandler.initialize();
         EventsHandler.initializeEvents();
+        ModEntities.init();
 
         ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
 
@@ -122,7 +125,6 @@ public class Chimeras implements ModInitializer {
         );
 
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(content -> {
-            content.add(CHIMERAS_PORTAL_BLOCK);
             content.add(CHIMERAS_CORE_BLOCK);
         });
     }

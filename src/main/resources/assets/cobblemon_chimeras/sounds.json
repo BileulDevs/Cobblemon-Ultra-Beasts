@@ -14,5 +14,13 @@
         "stream": true
       }
     ]
+  },
+  "core_used": {
+    "sounds": [
+      {
+        "name": "cobblemon_chimeras:core_used",
+        "stream": true
+      }
+    ]
   }
 }

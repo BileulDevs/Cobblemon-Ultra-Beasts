@@ -80,22 +80,24 @@ public class VoidFallHandler {
 
     private static void teleportBackToOverworld(ServerPlayerEntity player) {
         BlockPos savedPos = savedPositions.get(player.getUuid());
+        ServerWorld overworldWorld = player.getServer().getOverworld();
 
-        if (savedPos != null) {
-            ServerWorld overworldWorld = player.getServer().getOverworld();
-            player.teleport(overworldWorld, savedPos.getX() + 0.5, savedPos.getY(), savedPos.getZ() + 0.5, 0, 0);
+        player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.5f, 1.0f);
 
-            overworldWorld.spawnParticles(ParticleTypes.PORTAL,
-                    player.getX(), player.getY() + 1, player.getZ(),
-                    30, 0.5, 1, 0.5, 0.1);
+        overworldWorld.getServer().execute(() -> {
+            if (savedPos != null) {
+                player.teleport(overworldWorld, savedPos.getX() + 0.5, savedPos.getY(), savedPos.getZ() + 0.5, 0, 0);
 
-            savedPositions.remove(player.getUuid());
+                overworldWorld.spawnParticles(ParticleTypes.PORTAL,
+                        player.getX(), player.getY() + 1, player.getZ(),
+                        30, 0.5, 1, 0.5, 0.1);
 
-        } else {
-            ServerWorld overworldWorld = player.getServer().getOverworld();
-            BlockPos worldSpawn = overworldWorld.getSpawnPos();
-            player.teleport(overworldWorld,
-                    worldSpawn.getX() + 0.5, worldSpawn.getY(), worldSpawn.getZ() + 0.5, 0, 0);
-        }
+                savedPositions.remove(player.getUuid());
+            } else {
+                BlockPos worldSpawn = overworldWorld.getSpawnPos();
+                player.teleport(overworldWorld,
+                        worldSpawn.getX() + 0.5, worldSpawn.getY(), worldSpawn.getZ() + 0.5, 0, 0);
+            }
+        });
     }
 }
