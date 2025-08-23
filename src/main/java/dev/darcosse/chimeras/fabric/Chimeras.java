@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Random;
 
 public class Chimeras implements ModInitializer {
-    public static final String MOD_ID = "cobblemon_chimeras";
+    public static final String MOD_ID = "cobblemon_ultrabeast";
 
     public static final RegistryKey<World> CHIMERAS_DIMENSION = RegistryKey.of(
             RegistryKeys.WORLD,
@@ -46,14 +46,6 @@ public class Chimeras implements ModInitializer {
             Identifier.of(MOD_ID, "chimeras_dimension_type")
     );
 
-    public static final Block CHIMERAS_PORTAL_BLOCK = new ChimerasPortalBlock(
-            FabricBlockSettings.create()
-                    .mapColor(MapColor.BLACK)
-                    .strength(50.0f, 1200.0f)
-                    .sounds(ModBlockSoundGroups.PORTAL_SOUNDS)
-                    .luminance(15)
-    );
-
     public static final Block CHIMERAS_CORE_BLOCK = new ChimerasCoreBlock(
             FabricBlockSettings.create()
                     .mapColor(MapColor.BLACK)
@@ -63,7 +55,7 @@ public class Chimeras implements ModInitializer {
     );
 
     private int tickCounter = 0;
-    private static final int CHECK_INTERVAL = 200; // En tick (5s)
+    private static final int CHECK_INTERVAL = ConfigManager.getTrySpawnInterval(); // En tick
 
     private void onServerTick(MinecraftServer server) {
         tickCounter++;
@@ -100,11 +92,6 @@ public class Chimeras implements ModInitializer {
                 ChimerasChunkGenerator.CODEC
         );
 
-        Registry.register(
-                Registries.BLOCK,
-                Identifier.of(MOD_ID, "chimeras_portal"),
-                CHIMERAS_PORTAL_BLOCK
-        );
 
         Registry.register(
                 Registries.BLOCK,
@@ -112,11 +99,6 @@ public class Chimeras implements ModInitializer {
                 CHIMERAS_CORE_BLOCK
         );
 
-        Registry.register(
-                Registries.ITEM,
-                Identifier.of(MOD_ID, "chimeras_portal"),
-                new BlockItem(CHIMERAS_PORTAL_BLOCK, new Item.Settings())
-        );
 
         Registry.register(
                 Registries.ITEM,

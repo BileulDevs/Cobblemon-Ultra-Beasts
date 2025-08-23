@@ -2,7 +2,7 @@
   "portal_spawn": {
     "sounds": [
       {
-        "name": "cobblemon_chimeras:portal_spawn",
+        "name": "cobblemon_ultrabeast:portal_spawn",
         "stream": false
       }
     ]
@@ -10,7 +10,7 @@
   "portal_ambient": {
     "sounds": [
       {
-        "name": "cobblemon_chimeras:portal_ambient",
+        "name": "cobblemon_ultrabeast:portal_ambient",
         "stream": true
       }
     ]
@@ -18,7 +18,7 @@
   "core_used": {
     "sounds": [
       {
-        "name": "cobblemon_chimeras:core_used",
+        "name": "cobblemon_ultrabeast:core_used",
         "stream": true
       }
     ]

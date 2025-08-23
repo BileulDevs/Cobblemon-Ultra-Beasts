@@ -10,11 +10,11 @@ import net.minecraft.world.biome.Biome;
 
 public class ModBiomes {
     public static final RegistryKey<Biome> CHIMERAS_BIOME_KEY = RegistryKey.of(
-            RegistryKeys.BIOME, Identifier.of("cobblemon_chimeras", "chimeras_biome")
+            RegistryKeys.BIOME, Identifier.of("cobblemon_ultrabeast", "chimeras_biome")
     );
 
     public static void register() {
-        BiomeModifications.create(Identifier.of("cobblemon_chimeras", "add_chimeras_biome"))
+        BiomeModifications.create(Identifier.of("cobblemon_ultrabeast", "add_chimeras_biome"))
                 .add(ModificationPhase.ADDITIONS,
                         BiomeSelectors.foundInOverworld(),
                         (biomeSelectionContext, biomeModificationContext) -> {

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "cobblemon_chimeras",
+  "id": "cobblemon_ultrabeast",
   "version": "${version}",
-  "name": "Cobblemon Wormhole",
+  "name": "Cobblemon Ultra-Beasts",
   "description": "A mod that adds all Ultra Beasts and a dimension",
   "authors": [
     "Darcosse"
@@ -13,6 +13,9 @@
   "entrypoints": {
     "main": [
       "dev.darcosse.chimeras.fabric.Chimeras"
+    ],
+    "client": [
+      "dev.darcosse.chimeras.fabric.ChimerasClient"
     ]
   },
   "depends": {

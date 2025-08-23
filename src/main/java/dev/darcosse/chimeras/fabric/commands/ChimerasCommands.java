@@ -17,7 +17,7 @@ public class ChimerasCommands {
     }
 
     private static void registerShinyCommands(CommandDispatcher<ServerCommandSource> dispatcher) {
-        dispatcher.register(CommandManager.literal("ultrabeasts")
+        dispatcher.register(CommandManager.literal("ultrabeast")
                 .then(CommandManager.literal("reload")
                         .requires(source -> source.hasPermissionLevel(2))
                         .executes(ChimerasCommands::reloadConfig))

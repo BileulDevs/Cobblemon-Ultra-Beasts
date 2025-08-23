@@ -18,7 +18,7 @@ public class UnbreakableBlocksHandler {
 
     // RegistryKey de votre dimension des chimères
     public static final RegistryKey<World> CHIMERAS_DIMENSION =
-            RegistryKey.of(RegistryKeys.WORLD, Identifier.of("cobblemon_chimeras", "chimeras_dimension"));
+            RegistryKey.of(RegistryKeys.WORLD, Identifier.of("cobblemon_ultrabeast", "chimeras_dimension"));
 
     public static void initialize() {
         // Empêcher la casse de blocs

@@ -25,7 +25,7 @@ import static dev.darcosse.chimeras.fabric.ChimerasPortalBlock.savedPositions;
 public class VoidFallHandler {
 
     public static final RegistryKey<World> CHIMERAS_DIMENSION =
-            RegistryKey.of(RegistryKeys.WORLD, Identifier.of("cobblemon_chimeras", "chimeras_dimension"));
+            RegistryKey.of(RegistryKeys.WORLD, Identifier.of("cobblemon_ultrabeast", "chimeras_dimension"));
 
     private static final Set<UUID> processedPlayers = new HashSet<>();
 

@@ -58,29 +58,6 @@ public class ChimerasPortalBlock extends Block {
         return SHAPE;
     }
 
-    /**
-     * Méthode statique pour tenter de faire spawner un portail aléatoirement
-     * Appelez cette méthode depuis un système de ticks global ou un événement
-     */
-    public static void tryRandomSpawn(ServerWorld world, Random random) {
-        if (!world.getRegistryKey().equals(World.OVERWORLD)) {
-            return;
-        }
-
-        if (hasActivePortal(world)) {
-            return;
-        }
-
-        if (random.nextInt(ConfigManager.getWormholeSpawnChance()) != 0) {
-            return;
-        }
-
-        BlockPos spawnPos = findValidSpawnLocation(world, random);
-        if (spawnPos != null) {
-            spawnPortal(world, spawnPos);
-        }
-    }
-
 
     /**
      * Vérifie s'il y a un portail actif dans le monde
@@ -150,41 +127,6 @@ public class ChimerasPortalBlock extends Block {
         }
 
         return true;
-    }
-
-    /**
-     * Fait spawner le portail à la position donnée
-     */
-    private static void spawnPortal(ServerWorld world, BlockPos pos) {
-        world.setBlockState(pos, Chimeras.CHIMERAS_PORTAL_BLOCK.getDefaultState());
-
-        world.playSound(
-                null,
-                pos,
-                ModSounds.PORTAL_SPAWN,
-                SoundCategory.BLOCKS,
-                6.0f,
-                0.8f
-        );
-
-        activePortalPos = pos;
-        activePortalWorld = world;
-        portalPlacementTime = world.getTime();
-
-        ServerPlayerEntity nearestPlayer = (ServerPlayerEntity) world.getClosestPlayer(
-                pos.getX() + 0.5,
-                pos.getY() + 0.5,
-                pos.getZ() + 0.5,
-                64.0,
-                false
-        );
-
-        if (nearestPlayer != null) {
-            nearestPlayer.sendMessage(
-                    Text.translatable("message.cobblemon_chimeras.portal_spawn"),
-                    true
-            );
-        }
     }
 
     /**
@@ -361,7 +303,7 @@ public class ChimerasPortalBlock extends Block {
     }
 
     private void grantChimerasAdvancement(ServerPlayerEntity player) {
-        Identifier advancementId = Identifier.of("cobblemon_chimeras", "enter_chimeras_dimension");
+        Identifier advancementId = Identifier.of("cobblemon_ultrabeast", "enter_chimeras_dimension");
 
         AdvancementEntry advancement = player.getServer().getAdvancementLoader().get(advancementId);
 

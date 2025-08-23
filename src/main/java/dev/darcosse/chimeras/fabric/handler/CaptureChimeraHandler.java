@@ -16,7 +16,7 @@ public class CaptureChimeraHandler {
             ServerPlayerEntity player = event.getPlayer();
 
             if (event.getPokemon().isUltraBeast()) {
-                Identifier advancementId = Identifier.of("cobblemon_chimeras", "ultra_beast_master");
+                Identifier advancementId = Identifier.of("cobblemon_ultrabeast", "ultra_beast_master");
                 AdvancementEntry advancement = player.getServer().getAdvancementLoader().get(advancementId);
 
                 if (advancement != null) {

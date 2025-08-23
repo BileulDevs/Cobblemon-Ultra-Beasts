@@ -1,8 +1,6 @@
 package dev.darcosse.chimeras.fabric.entity;
 
 import dev.darcosse.chimeras.fabric.Chimeras;
-import dev.darcosse.chimeras.fabric.renderer.WormholeRenderer;
-import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
@@ -21,6 +19,7 @@ public class ModEntities {
     );
 
     public static void init() {
-        EntityRendererRegistry.register(ModEntities.WORMHOLE, WormholeRenderer::new);
+
     }
 }
+

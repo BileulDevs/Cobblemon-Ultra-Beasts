@@ -1,13 +1,11 @@
 package dev.darcosse.chimeras.fabric.entity;
 
 import com.cobblemon.mod.common.CobblemonEntities;
-import com.cobblemon.mod.common.api.snowstorm.EventSoundEffect;
 import dev.darcosse.chimeras.fabric.Chimeras;
 import dev.darcosse.chimeras.fabric.config.ConfigManager;
 import dev.darcosse.chimeras.fabric.registry.ModSounds;
 import net.minecraft.advancement.AdvancementEntry;
 import net.minecraft.advancement.AdvancementProgress;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
@@ -35,12 +33,10 @@ public class WormholeEntity extends Entity {
     private static long wormholePlacementTime = 0;
 
     private static final int LIFESPAN_TICKS = 1200;
-    private static final int SOUND_INTERVAL = 200;
     private static final int PARTICLE_INTERVAL = 20;
 
     public static final Map<UUID, BlockPos> savedPositions = new HashMap<>();
 
-    private int soundTimer = 0;
     private int particleTimer = 0;
 
     public WormholeEntity(EntityType<? extends WormholeEntity> type, World world) {
@@ -51,7 +47,6 @@ public class WormholeEntity extends Entity {
 
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {
-        // Pas de données spécifiques à tracker pour le moment
     }
 
     private static final int AMBIENT_SOUND_LENGTH_TICKS = 26 * 20; // 520 ticks = 26s
@@ -66,14 +61,12 @@ public class WormholeEntity extends Entity {
             long currentTime = world.getTime();
             long elapsed = currentTime - wormholePlacementTime;
 
-            // Vérifier la durée de vie
             if (elapsed >= LIFESPAN_TICKS) {
                 this.discard();
                 clearActiveWormhole();
                 return;
             }
 
-            // Gestion du son ambiant en boucle
             ambientSoundTimer++;
             if (ambientSoundTimer >= AMBIENT_SOUND_LENGTH_TICKS || ambientSoundTimer == 1) {
                 world.playSound(
@@ -81,13 +74,12 @@ public class WormholeEntity extends Entity {
                         this.getBlockPos(),
                         ModSounds.PORTAL_AMBIENT,
                         SoundCategory.HOSTILE,
-                        0.5f,   // volume
-                        1.0f    // pitch
+                        1.0f,
+                        0.5f
                 );
                 ambientSoundTimer = 0;
             }
 
-            // Particules
             particleTimer++;
             if (particleTimer >= PARTICLE_INTERVAL) {
                 spawnParticles();
@@ -244,7 +236,19 @@ public class WormholeEntity extends Entity {
     @Override
     public void onPlayerCollision(PlayerEntity player) {
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity serverPlayer) {
+            this.getWorld().playSound(
+                    null,
+                    this.getBlockPos(),
+                    SoundEvents.ENTITY_ENDERMAN_TELEPORT,
+                    SoundCategory.HOSTILE,
+                    1.0f,
+                    1.0f
+            );
+
             teleportToChimerasDimension(serverPlayer);
+
+            this.discard();
+            clearActiveWormhole();
         }
         super.onPlayerCollision(player);
     }
@@ -260,7 +264,14 @@ public class WormholeEntity extends Entity {
             killAllPokemonsOfWorld(chimerasWorld);
             grantChimerasAdvancement(player);
 
-            player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.5f, 1.0f);
+            player.getWorld().playSound(
+                    null,
+                    player.getBlockPos(),
+                    SoundEvents.ENTITY_ENDERMAN_TELEPORT,
+                    SoundCategory.PLAYERS,
+                    1.5f,
+                    1.0f
+            );
 
             player.teleport(chimerasWorld, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
 
@@ -329,7 +340,8 @@ public class WormholeEntity extends Entity {
     public void remove(RemovalReason reason) {
         super.remove(reason);
         if (this == activeWormhole) {
-            clearActiveWormhole();
+            activeWormhole = null;
+            wormholePlacementTime = 0;
         }
     }
 }

@@ -1,6 +1,7 @@
 package dev.darcosse.chimeras.fabric.config;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 import java.io.File;
 import java.io.FileReader;
@@ -10,7 +11,9 @@ import java.io.IOException;
 public class ConfigManager {
     private static final String CONFIG_FILE = "cobblemon_ultrabeasts_config.json";
     private static ChimerasConfig config;
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .create();
 
     public static void loadConfig() {
         File configFile = new File(FabricLoader.getInstance().getConfigDir().toFile(), CONFIG_FILE);
@@ -39,6 +42,11 @@ public class ConfigManager {
     public static int getWormholeSpawnChance() {
         if (config == null) loadConfig();
         return config.WORMHOLE_SPAWN_CHANCE;
+    }
+
+    public static int getTrySpawnInterval() {
+        if (config == null) loadConfig();
+        return config.TRY_SPAWN_INTERVAL;
     }
 
     public static void reloadConfig() {

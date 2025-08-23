@@ -14,7 +14,7 @@
     "announce_to_chat": true,
     "hidden": false
   },
-  "parent": "cobblemon_chimeras:enter_dimension",
+  "parent": "cobblemon_ultrabeast:root",
   "criteria": {
     "buzzwole": {
       "trigger": "minecraft:impossible"
