@@ -1,8 +1,8 @@
 {
   "texture_size": [32, 31],
   "textures": {
-    "0": "cobblemon_chimeras:block/chimeras_portal",
-    "particle": "cobblemon_chimeras:block/chimeras_portal"
+    "0": "cobblemon_ultrabeast:block/chimeras_portal",
+    "particle": "cobblemon_ultrabeast:block/chimeras_portal"
   },
   "elements": [
     {

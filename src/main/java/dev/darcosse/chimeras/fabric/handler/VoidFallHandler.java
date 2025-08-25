@@ -3,6 +3,8 @@ package dev.darcosse.chimeras.fabric.handler;
 import dev.darcosse.chimeras.fabric.ChimerasPortalBlock;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -20,7 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static dev.darcosse.chimeras.fabric.ChimerasPortalBlock.savedPositions;
+import static dev.darcosse.chimeras.fabric.entity.WormholeEntity.savedPositions;
 
 public class VoidFallHandler {
 
@@ -82,6 +84,7 @@ public class VoidFallHandler {
         BlockPos savedPos = savedPositions.get(player.getUuid());
         ServerWorld overworldWorld = player.getServer().getOverworld();
 
+        player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 100, 254, false, false, true));
         player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.5f, 1.0f);
 
         overworldWorld.getServer().execute(() -> {

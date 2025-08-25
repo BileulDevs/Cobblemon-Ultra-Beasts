@@ -3,8 +3,8 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [32, 32],
 	"textures": {
-		"0": "cobblemon_chimeras:block/chimeras_core",
-		"particle": "cobblemon_chimeras:block/chimeras_core"
+		"0": "cobblemon_ultrabeast:block/chimeras_core",
+		"particle": "cobblemon_ultrabeast:block/chimeras_core"
 	},
 	"elements": [
 		{

@@ -309,7 +309,7 @@ public class WormholeEntity extends Entity {
     }
 
     private void grantChimerasAdvancement(ServerPlayerEntity player) {
-        Identifier advancementId = Identifier.of("cobblemon_chimeras", "enter_chimeras_dimension");
+        Identifier advancementId = Identifier.of("cobblemon_ultrabeast", "enter_chimeras_dimension");
 
         AdvancementEntry advancement = player.getServer().getAdvancementLoader().get(advancementId);
 
