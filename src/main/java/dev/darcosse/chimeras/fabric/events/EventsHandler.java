@@ -7,7 +7,7 @@ import dev.darcosse.chimeras.fabric.handler.CaptureChimeraHandler;
 
 public class EventsHandler {
     public static void initializeEvents() {
-        CobblemonEvents.POKEMON_CAPTURED.subscribe(Priority.HIGHEST, CaptureChimeraHandler.registerGrantChimerasAdvancements());
+        CobblemonEvents.POKEDEX_DATA_CHANGED_POST.subscribe(Priority.HIGHEST, CaptureChimeraHandler.registerGrantChimerasAdvancements());
         Chimeras.LOGGER.info("Logged Wormhole events");
     }
 }

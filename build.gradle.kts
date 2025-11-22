@@ -1,12 +1,12 @@
 plugins {
     id("java")
-    id("dev.architectury.loom") version("1.7-SNAPSHOT")
+    id("dev.architectury.loom") version("1.9-SNAPSHOT")
     id("architectury-plugin") version("3.4-SNAPSHOT")
-    kotlin("jvm") version "1.9.23"
+    kotlin("jvm") version "2.2.20"
 }
 
 group = "dev.darcosse"
-version = "1.0.0"
+version = "2.0"
 
 architectury {
     platformSetupLoomIde()
@@ -32,12 +32,12 @@ dependencies {
     minecraft("net.minecraft:minecraft:1.21.1")
     //mappings("net.fabricmc:yarn:1.21.1+build.1:v2")
     mappings("net.fabricmc:yarn:1.21.1+build.3:v2")
-    modImplementation("net.fabricmc:fabric-loader:0.16.5")
+    modImplementation("net.fabricmc:fabric-loader:0.18.1")
 
-    modImplementation("net.fabricmc.fabric-api:fabric-api:0.104.0+1.21.1")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:0.116.7+1.21.1")
 
-    modImplementation("net.fabricmc:fabric-language-kotlin:1.12.3+kotlin.2.0.21")
-    modImplementation("com.cobblemon:fabric:1.6.0+1.21.1-SNAPSHOT")
+    modImplementation("net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20")
+    modImplementation("com.cobblemon:fabric:1.7.0+1.21.1-SNAPSHOT")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
