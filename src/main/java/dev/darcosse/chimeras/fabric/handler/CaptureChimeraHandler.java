@@ -22,7 +22,6 @@ public class CaptureChimeraHandler {
 
             Pokemon pokemon = event.getDataSource().getPokemon();
 
-            // Vérifie si c'est une Ultra Beast et que le joueur a l'entrée dans le Pokédex
             if (pokemon.isUltraBeast() && event.getPokedexManager().getKnowledgeForSpecies(pokemon.getSpecies().resourceIdentifier) == PokedexEntryProgress.CAUGHT) {
 
                 Identifier advancementId = Identifier.of("cobblemon_ultrabeast", "ultra_beast_master");
@@ -37,24 +36,4 @@ public class CaptureChimeraHandler {
             return Unit.INSTANCE;
         };
     }
-
-//    public static Function1<? super PokemonCapturedEvent, Unit> registerGrantChimerasAdvancements() {
-//        return event -> {
-//            ServerPlayerEntity player = event.getPlayer();
-//
-//            if (event.getPokemon().isUltraBeast()) {
-//                Identifier advancementId = Identifier.of("cobblemon_ultrabeast", "ultra_beast_master");
-//                AdvancementEntry advancement = player.getServer().getAdvancementLoader().get(advancementId);
-//
-//                if (advancement != null) {
-//                    String criterion = event.getPokemon().getSpecies().getName().toLowerCase();
-//
-//                    player.getAdvancementTracker().grantCriterion(advancement, criterion);
-//                }
-//            }
-//
-//            return Unit.INSTANCE;
-//        };
-//    }
-
 }

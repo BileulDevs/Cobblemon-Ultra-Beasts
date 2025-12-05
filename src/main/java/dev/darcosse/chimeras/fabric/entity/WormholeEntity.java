@@ -9,6 +9,8 @@ import net.minecraft.advancement.AdvancementProgress;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -264,14 +266,9 @@ public class WormholeEntity extends Entity {
             killAllPokemonsOfWorld(chimerasWorld);
             grantChimerasAdvancement(player);
 
-            player.getWorld().playSound(
-                    null,
-                    player.getBlockPos(),
-                    SoundEvents.ENTITY_ENDERMAN_TELEPORT,
-                    SoundCategory.PLAYERS,
-                    1.5f,
-                    1.0f
-            );
+            player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+            player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 100, 254, false, false, true));
+            player.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 254, false, false, true));
 
             player.teleport(chimerasWorld, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
 
