@@ -9,7 +9,7 @@ public class ChimerasRegistry {
     public static void initialize() {
         Registry.register(
                 Registries.CHUNK_GENERATOR,
-                Identifier.of("cobblemon_ultrabeast", "chimeras_generator"),
+                Identifier.of(Chimeras.MOD_ID, "chimeras_generator"),
                 ChimerasChunkGenerator.CODEC
         );
     }

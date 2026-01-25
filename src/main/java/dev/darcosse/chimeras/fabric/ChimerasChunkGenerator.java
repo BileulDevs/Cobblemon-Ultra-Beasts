@@ -40,7 +40,7 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
     );
 
     public static final RegistryKey<Biome> CHIMERAS_BIOME_KEY = RegistryKey.of(
-            RegistryKeys.BIOME, Identifier.of("cobblemon_ultrabeast", "chimeras_biome")
+            RegistryKeys.BIOME, Identifier.of(Chimeras.MOD_ID, "chimeras_biome")
     );
 
     public ChimerasChunkGenerator(BiomeSource biomeSource) {

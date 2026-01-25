@@ -444,6 +444,49 @@ public class WormholeSpawnAnimation extends Entity {
                 2.0
         );
 
+        // Explosion finale lumineuse
+        ((ServerWorld) getWorld()).spawnParticles(
+                ParticleTypes.END_ROD,
+                targetPos.getX() + 0.5,
+                targetPos.getY() + 0.5,
+                targetPos.getZ() + 0.5,
+                200, // nombre de particules
+                1.5, 1.5, 1.5, // dispersion
+                0.1 // vitesse
+        );
+
+        // Vortex lumineux
+        for (int i = 0; i < 100; i++) {
+            double angle = random.nextDouble() * 2 * Math.PI;
+            double radius = 0.5 + random.nextDouble() * 1.5;
+
+            double x = targetPos.getX() + 0.5 + Math.cos(angle) * radius;
+            double y = targetPos.getY() + 0.5 + random.nextDouble() * 2.0;
+            double z = targetPos.getZ() + 0.5 + Math.sin(angle) * radius;
+
+            getWorld().addParticle(
+                    ParticleTypes.SOUL_FIRE_FLAME,
+                    x, y, z,
+                    0, 0.05 + random.nextDouble() * 0.05, 0
+            );
+        }
+
+        double time = getWorld().getTime() + random.nextDouble() * 100;
+        for (int i = 0; i < 40; i++) {
+            double angle = i * (2 * Math.PI / 40) + time * 0.05;
+            double radius = 1.0 + 0.5 * Math.sin(time * 0.1 + i);
+
+            double x = targetPos.getX() + 0.5 + Math.cos(angle) * radius;
+            double y = targetPos.getY() + 0.5 + 0.2 * i; // spirale
+            double z = targetPos.getZ() + 0.5 + Math.sin(angle) * radius;
+
+            getWorld().addParticle(
+                    ParticleTypes.ENCHANT,
+                    x, y, z,
+                    0, 0.02, 0
+            );
+        }
+
         discard();
     }
 
