@@ -41,6 +41,8 @@ public class WormholeEntity extends Entity {
 
     private int particleTimer = 0;
 
+    private static boolean isSpawning = false;
+
     public WormholeEntity(EntityType<? extends WormholeEntity> type, World world) {
         super(type, world);
         this.noClip = true;
@@ -116,6 +118,9 @@ public class WormholeEntity extends Entity {
      * Vérifie s'il y a un trou de ver actif dans le monde
      */
     public static boolean hasActiveWormhole(ServerWorld world) {
+        if (isSpawning) {
+            return true;
+        }
         return activeWormhole != null && !activeWormhole.isRemoved() && activeWormhole.getWorld() == world;
     }
 
@@ -175,22 +180,24 @@ public class WormholeEntity extends Entity {
      * Fait spawner le trou de ver à la position donnée
      */
     private static void spawnWormhole(ServerWorld world, BlockPos pos) {
-        WormholeEntity wormhole = new WormholeEntity(ModEntities.WORMHOLE, world);
-        wormhole.setPosition(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+        isSpawning = true;
 
-        world.spawnEntity(wormhole);
+        WormholeSpawnAnimation animationEntity = new WormholeSpawnAnimation(
+                ModEntities.WORMHOLE_ANIMATION,
+                world,
+                pos
+        );
+        animationEntity.setPosition(pos.getX() + 0.5, pos.getY() + 20, pos.getZ() + 0.5);
+        world.spawnEntity(animationEntity);
 
         world.playSound(
                 null,
                 pos,
-                SoundEvents.BLOCK_BEACON_ACTIVATE,
+                SoundEvents.ENTITY_WARDEN_SONIC_BOOM, // Son plus imposant
                 SoundCategory.HOSTILE,
-                3.0f,
-                0.8f
+                2.0f,
+                0.5f
         );
-
-        activeWormhole = wormhole;
-        wormholePlacementTime = world.getTime();
 
         ServerPlayerEntity nearestPlayer = (ServerPlayerEntity) world.getClosestPlayer(
                 pos.getX() + 0.5,
@@ -214,6 +221,7 @@ public class WormholeEntity extends Entity {
     private static void clearActiveWormhole() {
         activeWormhole = null;
         wormholePlacementTime = 0;
+        isSpawning = false;
     }
 
     private void spawnParticles() {
@@ -274,6 +282,22 @@ public class WormholeEntity extends Entity {
 
             player.sendMessage(Text.translatable("dimension.travel.chimeras"), false);
         }
+    }
+
+    /**
+     * Définit le trou de ver actif (utilisé par l'animation)
+     */
+    public static void setActiveWormhole(WormholeEntity wormhole, long placementTime) {
+        activeWormhole = wormhole;
+        wormholePlacementTime = placementTime;
+        isSpawning = false;
+    }
+
+    /**
+     * Marque qu'une animation de spawn est en cours
+     */
+    public static void setSpawning(boolean spawning) {
+        isSpawning = spawning;
     }
 
     public static void checkAndPlaceChimerasCore(ServerWorld world) {

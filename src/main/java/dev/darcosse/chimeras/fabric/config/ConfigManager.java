@@ -9,7 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class ConfigManager {
-    private static final String CONFIG_FILE = "cobblemon_ultrabeasts_config.json";
+    private static final String CONFIG_FILE = "ultrabeasts.json";
     private static ChimerasConfig config;
     private static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
