@@ -328,7 +328,7 @@ public class WormholeSpawnAnimation extends Entity {
         double progress = (double) animationTick / DESCENT_DURATION;
         double radius = 3.0 * (1 - progress * 0.5);
 
-        // Spirale de particules
+        // Spirale de particules "sombre"
         for (int i = 0; i < 15; i++) {
             double angle = (animationTick * 15 + i * 24) * Math.PI / 180;
             double spiralRadius = radius * (1 - (i / 15.0) * 0.5);
@@ -337,28 +337,30 @@ public class WormholeSpawnAnimation extends Entity {
             double z = getZ() + Math.sin(angle) * spiralRadius;
             double y = getY() + (random.nextDouble() - 0.5) * 2;
 
+            // Particule principale sombre
             getWorld().addParticle(
-                    ParticleTypes.DRAGON_BREATH,
+                    ParticleTypes.SMOKE,
                     x, y, z,
-                    (getX() - x) * 0.1,
-                    -0.1,
-                    (getZ() - z) * 0.1
+                    (getX() - x) * 0.05,
+                    -0.05,
+                    (getZ() - z) * 0.05
             );
 
+            // Particule secondaire "cendre"
             if (i % 3 == 0) {
                 getWorld().addParticle(
-                        ParticleTypes.SOUL_FIRE_FLAME,
+                        ParticleTypes.ASH,
                         x, y, z,
-                        0, 0.05, 0
+                        0, -0.02, 0
                 );
             }
         }
 
-        // Vortex central
+        // Vortex central plus sombre
         int centralParticles = (int) (5 + progress * 20);
         for (int i = 0; i < centralParticles; i++) {
             getWorld().addParticle(
-                    ParticleTypes.REVERSE_PORTAL,
+                    ParticleTypes.SMOKE,
                     getX() + (random.nextDouble() - 0.5) * radius * 0.3,
                     getY() + (random.nextDouble() - 0.5),
                     getZ() + (random.nextDouble() - 0.5) * radius * 0.3,
