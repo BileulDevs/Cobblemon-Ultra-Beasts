@@ -7,13 +7,12 @@ import dev.darcosse.chimeras.fabric.entity.WormholeEntity;
 import dev.darcosse.chimeras.fabric.events.EventsHandler;
 import dev.darcosse.chimeras.fabric.handler.UnbreakableBlocksHandler;
 import dev.darcosse.chimeras.fabric.handler.VoidFallHandler;
-import dev.darcosse.chimeras.fabric.registry.ModBlockSoundGroups;
+import dev.darcosse.chimeras.fabric.registry.ChimerasRegistry;
 import dev.darcosse.chimeras.fabric.registry.ModSounds;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.MapColor;
-import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.Block;
@@ -97,15 +96,6 @@ public class Chimeras implements ModInitializer {
                 var blockDisplays = world.getEntitiesByType(EntityType.BLOCK_DISPLAY, entity -> true);
                 for (DisplayEntity.BlockDisplayEntity blockDisplay : blockDisplays) {
                     blockDisplay.discard();
-                }
-
-                if (WormholeEntity.hasActiveWormhole(world)) {
-                    WormholeEntity active = WormholeEntity.activeWormhole;
-                    if (active != null && !active.isRemoved()) {
-                        active.discard();
-                        WormholeEntity.setActiveWormhole(null, 0);
-                        LOGGER.info("Active WormholeEntity removed.");
-                    }
                 }
             }
 

@@ -3,7 +3,7 @@
   "id": "cobblemon_ultrabeast",
   "version": "${version}",
   "name": "Cobblemon Ultra-Beasts",
-  "description": "A mod that adds all Ultra Beasts and a dimension",
+  "description": "A mod that adds all Ultra Beasts and their dimensions",
   "authors": [
     "Darcosse"
   ],
@@ -20,6 +20,6 @@
   },
   "depends": {
     "minecraft": "1.21.1",
-    "cobblemon": ">=1.7.1"
+    "cobblemon": ">=1.7.2"
   }
 }

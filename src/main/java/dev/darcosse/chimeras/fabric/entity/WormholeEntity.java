@@ -33,7 +33,7 @@ import java.util.Random;
 import java.util.UUID;
 
 public class WormholeEntity extends Entity {
-    public static WormholeEntity activeWormhole = null;
+    private static WormholeEntity activeWormhole = null;
     private static long wormholePlacementTime = 0;
 
     private static final int LIFESPAN_TICKS = 1200;

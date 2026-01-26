@@ -16,13 +16,11 @@ public class WormholeSpawnAnimationRenderer extends EntityRenderer<WormholeSpawn
     @Override
     public void render(WormholeSpawnAnimation entity, float yaw, float tickDelta, MatrixStack matrices,
                        VertexConsumerProvider vertexConsumers, int light) {
-        // Pas de rendu visuel, tout se fait via particules dans clientAnimation()
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
     }
 
     @Override
     public Identifier getTexture(WormholeSpawnAnimation entity) {
-        // Pas de texture nécessaire
         return null;
     }
 }
