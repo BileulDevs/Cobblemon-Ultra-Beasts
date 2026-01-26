@@ -6,6 +6,7 @@ import dev.darcosse.chimeras.fabric.config.ConfigManager;
 import dev.darcosse.chimeras.fabric.registry.ModSounds;
 import net.minecraft.advancement.AdvancementEntry;
 import net.minecraft.advancement.AdvancementProgress;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
@@ -13,6 +14,7 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -31,7 +33,7 @@ import java.util.Random;
 import java.util.UUID;
 
 public class WormholeEntity extends Entity {
-    private static WormholeEntity activeWormhole = null;
+    public static WormholeEntity activeWormhole = null;
     private static long wormholePlacementTime = 0;
 
     private static final int LIFESPAN_TICKS = 1200;
@@ -42,6 +44,9 @@ public class WormholeEntity extends Entity {
     private int particleTimer = 0;
 
     private static boolean isSpawning = false;
+
+    // Position du bloc de lumière
+    private BlockPos lightBlockPos = null;
 
     public WormholeEntity(EntityType<? extends WormholeEntity> type, World world) {
         super(type, world);
@@ -66,6 +71,7 @@ public class WormholeEntity extends Entity {
             long elapsed = currentTime - wormholePlacementTime;
 
             if (elapsed >= LIFESPAN_TICKS) {
+                removeLightBlock();
                 this.discard();
                 clearActiveWormhole();
                 return;
@@ -228,6 +234,30 @@ public class WormholeEntity extends Entity {
 
     }
 
+    /**
+     * Place un bloc de lumière à la position du portail
+     */
+    public void placeLightBlock() {
+        if (!this.getWorld().isClient && this.getWorld() instanceof ServerWorld world) {
+            lightBlockPos = this.getBlockPos();
+            if (world.getBlockState(lightBlockPos).isAir()) {
+                world.setBlockState(lightBlockPos, Blocks.LIGHT.getDefaultState());
+            }
+        }
+    }
+
+    /**
+     * Supprime le bloc de lumière
+     */
+    private void removeLightBlock() {
+        if (lightBlockPos != null && !this.getWorld().isClient && this.getWorld() instanceof ServerWorld world) {
+            if (world.getBlockState(lightBlockPos).isOf(Blocks.LIGHT)) {
+                world.setBlockState(lightBlockPos, Blocks.AIR.getDefaultState());
+            }
+            lightBlockPos = null;
+        }
+    }
+
     @Override
     public ActionResult interact(PlayerEntity player, Hand hand) {
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity serverPlayer) {
@@ -235,6 +265,7 @@ public class WormholeEntity extends Entity {
 
             this.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
 
+            removeLightBlock();
             this.discard();
             clearActiveWormhole();
 
@@ -257,6 +288,7 @@ public class WormholeEntity extends Entity {
 
             teleportToChimerasDimension(serverPlayer);
 
+            removeLightBlock();
             this.discard();
             clearActiveWormhole();
         }
@@ -274,13 +306,47 @@ public class WormholeEntity extends Entity {
             killAllPokemonsOfWorld(chimerasWorld);
             grantChimerasAdvancement(player);
 
-            player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 100, 254, false, false, true));
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 254, false, false, true));
 
             player.teleport(chimerasWorld, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
 
-            player.sendMessage(Text.translatable("dimension.travel.chimeras"), false);
+            // Jouer les sons dans le monde de destination après un court délai
+            MinecraftServer server = player.getServer();
+            new Thread(() -> {
+                try {
+                    Thread.sleep(500); // Attendre 500ms
+                    server.execute(() -> {
+                        if (player.isAlive() && !player.isRemoved()) {
+                            BlockPos playerPos = player.getBlockPos();
+
+                            // Son principal
+                            chimerasWorld.playSound(
+                                    null,
+                                    playerPos,
+                                    SoundEvents.ENTITY_ENDERMAN_SCREAM,
+                                    SoundCategory.HOSTILE,
+                                    2.0f,
+                                    1.0f
+                            );
+
+                            // Son secondaire pour plus d'impact
+                            chimerasWorld.playSound(
+                                    null,
+                                    playerPos,
+                                    SoundEvents.ENTITY_WARDEN_HEARTBEAT,
+                                    SoundCategory.AMBIENT,
+                                    1.5f,
+                                    0.8f
+                            );
+
+                            player.sendMessage(Text.translatable("dimension.travel.chimeras"), false);
+                        }
+                    });
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
         }
     }
 
@@ -291,6 +357,11 @@ public class WormholeEntity extends Entity {
         activeWormhole = wormhole;
         wormholePlacementTime = placementTime;
         isSpawning = false;
+
+        // Place le bloc de lumière quand le portail devient actif
+        if (wormhole != null) {
+            wormhole.placeLightBlock();
+        }
     }
 
     /**
@@ -330,7 +401,7 @@ public class WormholeEntity extends Entity {
     }
 
     private void grantChimerasAdvancement(ServerPlayerEntity player) {
-        Identifier advancementId = Identifier.of("cobblemon_ultrabeast", "enter_chimeras_dimension");
+        Identifier advancementId = Identifier.of(Chimeras.MOD_ID, "enter_chimeras_dimension");
 
         AdvancementEntry advancement = player.getServer().getAdvancementLoader().get(advancementId);
 
@@ -350,15 +421,28 @@ public class WormholeEntity extends Entity {
         if (nbt.contains("PlacementTime")) {
             wormholePlacementTime = nbt.getLong("PlacementTime");
         }
+        if (nbt.contains("LightBlockX") && nbt.contains("LightBlockY") && nbt.contains("LightBlockZ")) {
+            lightBlockPos = new BlockPos(
+                    nbt.getInt("LightBlockX"),
+                    nbt.getInt("LightBlockY"),
+                    nbt.getInt("LightBlockZ")
+            );
+        }
     }
 
     @Override
     protected void writeCustomDataToNbt(NbtCompound nbt) {
         nbt.putLong("PlacementTime", wormholePlacementTime);
+        if (lightBlockPos != null) {
+            nbt.putInt("LightBlockX", lightBlockPos.getX());
+            nbt.putInt("LightBlockY", lightBlockPos.getY());
+            nbt.putInt("LightBlockZ", lightBlockPos.getZ());
+        }
     }
 
     @Override
     public void remove(RemovalReason reason) {
+        removeLightBlock();
         super.remove(reason);
         if (this == activeWormhole) {
             activeWormhole = null;

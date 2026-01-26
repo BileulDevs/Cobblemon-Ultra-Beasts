@@ -112,7 +112,9 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
                 double distanceFromCenter = Math.sqrt(worldX * worldX + worldZ * worldZ);
 
                 if (distanceFromCenter <= islandRadius) {
+                    // Modifier la courbe pour une transition plus douce
                     double edgeFactor = 1.0 - (distanceFromCenter / islandRadius);
+                    edgeFactor = Math.pow(edgeFactor, 0.4); // Plus petit = plus plat (était implicitement 1.0)
 
                     int thickness = (int) (maxThickness * edgeFactor);
                     int calculatedTopY = centerY + thickness / 2;
@@ -120,7 +122,8 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
                     int topY = Math.min(calculatedTopY, flatTopY);
                     int bottomY = centerY - thickness / 2;
 
-                    int pointDepth = (int) (thickness * 0.8 * edgeFactor);
+                    // Réduire la profondeur de la pointe pour moins d'effet V
+                    int pointDepth = (int) (thickness * 0.4 * edgeFactor); // Réduit de 0.8 à 0.4
                     bottomY -= pointDepth;
 
                     for (int y = bottomY; y <= topY; y++) {
@@ -140,10 +143,8 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
                     }
 
                     if (shouldGenerateCrystal(worldX, worldZ, distanceFromCenter, islandRadius)) {
-                        // VÉRIFIER QU'IL Y A UN BLOC SOLIDE EN DESSOUS
                         BlockPos groundPos = new BlockPos(x, flatTopY, z);
-                        if (!chunk.getBlockState(groundPos).isAir()) { // Vérifier que le sol existe
-
+                        if (!chunk.getBlockState(groundPos).isAir()) {
                             int crystalHeight = 2 + (int)(Math.random() * 3);
 
                             for (int i = 1; i <= crystalHeight; i++) {
@@ -155,7 +156,6 @@ public class ChimerasChunkGenerator extends ChunkGenerator {
                                                     .with(AmethystClusterBlock.FACING, Direction.UP),
                                             false);
                                 } else {
-                                    // Corps : blocs d'améthyste
                                     chunk.setBlockState(crystalPos, Blocks.BUDDING_AMETHYST.getDefaultState(), false);
                                 }
                             }

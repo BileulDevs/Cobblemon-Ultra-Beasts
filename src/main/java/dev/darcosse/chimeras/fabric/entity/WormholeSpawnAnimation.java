@@ -5,50 +5,52 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.FallingBlockEntity;
+import net.minecraft.entity.decoration.DisplayEntity.BlockDisplayEntity;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.AffineTransformation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class WormholeSpawnAnimation extends Entity {
-    private int animationTick = 0;
-    private static final int DESCENT_DURATION = 60; // 3 secondes de descente
-    private static final int BLOCK_COLLECTION_DURATION = 40; // 2 secondes pour collecter les blocs
-    private static final int ABSORPTION_DURATION = 100; // 5 secondes pour aspirer les blocs
-    private static final int TOTAL_DURATION = DESCENT_DURATION + BLOCK_COLLECTION_DURATION + ABSORPTION_DURATION;
 
-    private BlockPos targetPos;
-    private boolean finalEntitySpawned = false;
-    private List<FallingBlockEntity> flyingBlocks = new ArrayList<>();
-    private boolean blocksSpawned = false;
-    private static final int BLOCK_SAMPLE_RADIUS = 50;
-    private static final int MAX_FLYING_BLOCKS = 200; // Nombre de blocs volants
+    private static final int DESCENT_DURATION = 60;
+    private static final int BLOCK_COLLECTION_DURATION = 40;
+    private static final int ABSORPTION_DURATION = 100;
+    private static final int TOTAL_DURATION =
+            DESCENT_DURATION + BLOCK_COLLECTION_DURATION + ABSORPTION_DURATION;
+
+    private static final int MAX_FLYING_BLOCKS = 200;
 
     private final Random random = new Random();
 
-    // Constructeur requis par Fabric
+    private int animationTick = 0;
+    private BlockPos targetPos = BlockPos.ORIGIN;
+    private boolean blocksSpawned = false;
+    private boolean finalEntitySpawned = false;
+
+    private final List<BlockDisplayEntity> flyingBlocks = new ArrayList<>();
+
     public WormholeSpawnAnimation(EntityType<? extends WormholeSpawnAnimation> type, World world) {
         super(type, world);
-        this.targetPos = BlockPos.ORIGIN;
         this.noClip = true;
         this.setInvulnerable(true);
     }
 
-    // Constructeur utilitaire avec position
-    public WormholeSpawnAnimation(EntityType<? extends WormholeSpawnAnimation> type, World world, BlockPos targetPos) {
+    public WormholeSpawnAnimation(EntityType<? extends WormholeSpawnAnimation> type, World world, BlockPos pos) {
         this(type, world);
-        this.targetPos = targetPos;
+        this.targetPos = pos;
     }
 
     public void setTargetPos(BlockPos pos) {
@@ -59,256 +61,163 @@ public class WormholeSpawnAnimation extends Entity {
     public void tick() {
         super.tick();
 
-        if (getWorld().isClient) {
-            clientAnimation();
-        } else {
-            serverTick();
-        }
-    }
+        if (getWorld().isClient) return;
 
-    private void serverTick() {
         animationTick++;
 
-        if (animationTick == 1) {
-            Chimeras.LOGGER.info("WormholeSpawnAnimation started at " + targetPos);
-        }
-
-        // Phase 1: Descente (0-60 ticks)
         if (animationTick <= DESCENT_DURATION) {
             handleDescent();
-        }
-        // Phase 2: Spawn des blocs volants (60-100 ticks)
-        else if (animationTick <= DESCENT_DURATION + BLOCK_COLLECTION_DURATION) {
+        } else if (animationTick <= DESCENT_DURATION + BLOCK_COLLECTION_DURATION) {
             if (!blocksSpawned) {
                 spawnFlyingBlocks();
                 blocksSpawned = true;
 
-                // Son de début d'aspiration
                 getWorld().playSound(
-                        null,
-                        targetPos,
+                        null, targetPos,
                         SoundEvents.ENTITY_WITHER_SPAWN,
                         SoundCategory.HOSTILE,
-                        2.0f,
-                        0.3f
+                        2.0f, 0.4f
                 );
             }
-            // Anime les blocs pendant cette phase aussi
             animateFlyingBlocks();
-        }
-        // Phase 3: Absorption des blocs (100-200 ticks)
-        else if (animationTick <= TOTAL_DURATION) {
+        } else if (animationTick <= TOTAL_DURATION) {
             animateFlyingBlocks();
-        }
-        // Phase 4: Spawn du wormhole final
-        else if (!finalEntitySpawned) {
-            Chimeras.LOGGER.info("Spawning final wormhole at " + targetPos);
+        } else if (!finalEntitySpawned) {
             cleanupBlocks();
             spawnFinalWormhole();
         }
     }
 
+    // ================= DESCENTE =================
+
     private void handleDescent() {
         double progress = (double) animationTick / DESCENT_DURATION;
         double startY = targetPos.getY() + 20;
-        double targetY = targetPos.getY();
-        double currentY = startY - (progress * (startY - targetY));
+        double y = startY - progress * 20;
 
-        setPosition(targetPos.getX() + 0.5, currentY, targetPos.getZ() + 0.5);
+        setPosition(targetPos.getX() + 0.5, y, targetPos.getZ() + 0.5);
 
-        // Sons intermédiaires
-        if (animationTick == 20) {
-            getWorld().playSound(
-                    null,
-                    getBlockPos(),
-                    SoundEvents.BLOCK_PORTAL_AMBIENT,
-                    SoundCategory.HOSTILE,
-                    1.5f,
-                    0.6f
-            );
-        }
-
-        if (animationTick == 40) {
-            getWorld().playSound(
-                    null,
-                    getBlockPos(),
-                    SoundEvents.ENTITY_ENDERMAN_TELEPORT,
-                    SoundCategory.HOSTILE,
-                    2.0f,
-                    0.4f
-            );
-        }
-
-        // Particules de descente
-        if (animationTick % 2 == 0) {
-            ((ServerWorld) getWorld()).spawnParticles(
+        if (getWorld() instanceof ServerWorld sw) {
+            // Particules de portail principales
+            sw.spawnParticles(
                     ParticleTypes.PORTAL,
                     getX(), getY(), getZ(),
-                    20,
-                    1.5, 1.5, 1.5,
-                    0.5
+                    120,  // Beaucoup plus de particules
+                    3.0,  // Zone plus large
+                    3.0,
+                    3.0,
+                    0.8   // Plus de vitesse
             );
 
-            ((ServerWorld) getWorld()).spawnParticles(
-                    ParticleTypes.REVERSE_PORTAL,
-                    getX(), getY(), getZ(),
-                    10,
-                    0.5, 0.5, 0.5,
-                    0.1
-            );
+            // Ajouter des particules END_ROD pour un effet lumineux
+            if (animationTick % 3 == 0) {
+                sw.spawnParticles(
+                        ParticleTypes.END_ROD,
+                        getX(), getY(), getZ(),
+                        20,
+                        2.0,
+                        2.0,
+                        2.0,
+                        0.1
+                );
+            }
         }
     }
 
+    // ================= BLOCS VISUELS =================
+
     private void spawnFlyingBlocks() {
-        if (!(getWorld() instanceof ServerWorld serverWorld)) return;
+        if (!(getWorld() instanceof ServerWorld sw)) return;
 
-        flyingBlocks.clear();
-
-        Chimeras.LOGGER.info("Spawning flying blocks with multiple types...");
-
-        // Liste fixe de blocs à utiliser
-        List<BlockState> groundBlockTypes = new ArrayList<>();
-        groundBlockTypes.add(Blocks.STONE.getDefaultState());
-        groundBlockTypes.add(Blocks.DIRT.getDefaultState());
-        groundBlockTypes.add(Blocks.GRASS_BLOCK.getDefaultState());
-        groundBlockTypes.add(Blocks.COBBLESTONE.getDefaultState());
-        groundBlockTypes.add(Blocks.SAND.getDefaultState());
+        List<BlockState> blocks = List.of(
+                Blocks.STONE.getDefaultState(),
+                Blocks.DIRT.getDefaultState(),
+                Blocks.GRASS_BLOCK.getDefaultState(),
+                Blocks.COBBLESTONE.getDefaultState(),
+                Blocks.SAND.getDefaultState()
+        );
 
         for (int i = 0; i < MAX_FLYING_BLOCKS; i++) {
 
-            // Position aléatoire sur une sphère autour du centre
-            double u = random.nextDouble();
-            double v = random.nextDouble();
-            double theta = u * 2 * Math.PI;
-            double phi = Math.acos(2 * v - 1);
+            double angle = random.nextDouble() * Math.PI * 2;
+            double radius = 15 + random.nextDouble() * 20;
+            double height = random.nextDouble() * 8 - 4;
 
-            double minRadius = 15;
-            double maxRadius = 35;
-            double radius = minRadius + Math.cbrt(random.nextDouble()) * (maxRadius - minRadius);
+            double x = targetPos.getX() + 0.5 + Math.cos(angle) * radius;
+            double y = targetPos.getY() + 1.5 + height;
+            double z = targetPos.getZ() + 0.5 + Math.sin(angle) * radius;
 
-            double sinPhi = Math.sin(phi);
-            double spawnX = targetPos.getX() + 0.5 + radius * sinPhi * Math.cos(theta);
-            double spawnY = targetPos.getY() + radius * Math.cos(phi);
-            double spawnZ = targetPos.getZ() + 0.5 + radius * sinPhi * Math.sin(theta);
-
-            // Bloc choisi aléatoirement
-            BlockState blockState = groundBlockTypes.get(random.nextInt(groundBlockTypes.size()));
-
-            // Crée le FallingBlockEntity
-            FallingBlockEntity fallingBlock = new FallingBlockEntity(EntityType.FALLING_BLOCK, serverWorld);
-
-            // NBT correct sans .toString()
-            NbtCompound nbt = new NbtCompound();
-            nbt.put("BlockState", BlockState.CODEC.encodeStart(NbtOps.INSTANCE, blockState).getOrThrow());
-            nbt.putBoolean("DropItem", false);
-            nbt.putBoolean("HurtEntities", false);
-            nbt.putInt("Time", 1);
-
-            fallingBlock.readNbt(nbt);
-            fallingBlock.setPosition(spawnX, spawnY, spawnZ);
-            fallingBlock.dropItem = false;
-            fallingBlock.velocityModified = true;
-
-            // Vitesse tangentielle pour créer l'orbite
-            double speed = 0.5;
-            Vec3d radial = new Vec3d(spawnX - (targetPos.getX() + 0.5),
-                    spawnY - targetPos.getY(),
-                    spawnZ - (targetPos.getZ() + 0.5)).normalize();
-
-            Vec3d tangent = radial.crossProduct(new Vec3d(0, 1, 0)).normalize();
-
-            fallingBlock.setVelocity(
-                    tangent.x * speed + (random.nextDouble() - 0.5) * 0.1,
-                    0.1 + random.nextDouble() * 0.2,
-                    tangent.z * speed + (random.nextDouble() - 0.5) * 0.1
+            BlockDisplayEntity display = new BlockDisplayEntity(
+                    EntityType.BLOCK_DISPLAY, sw
             );
 
-            serverWorld.spawnEntity(fallingBlock);
-            flyingBlocks.add(fallingBlock);
-        }
+            display.setBlockState(blocks.get(random.nextInt(blocks.size())));
+            display.setPosition(x, y, z);
+            display.setNoGravity(true);
+            display.setInvulnerable(true);
 
-        Chimeras.LOGGER.info("Spawned " + flyingBlocks.size() + " flying blocks in orbit.");
+            float scale = 0.6f + random.nextFloat() * 0.4f;
+            display.setTransformation(new AffineTransformation(
+                    new Vector3f(),
+                    null,
+                    new Vector3f(scale, scale, scale),
+                    null
+            ));
+
+            sw.spawnEntity(display);
+            flyingBlocks.add(display);
+        }
     }
+
+    // ================= ANIMATION =================
 
     private void animateFlyingBlocks() {
-        if (!(getWorld() instanceof ServerWorld serverWorld)) return;
-
-        int absorptionTick = animationTick - DESCENT_DURATION - BLOCK_COLLECTION_DURATION;
-        double absorptionProgress = Math.max(0, (double) absorptionTick / ABSORPTION_DURATION);
-
-        // Son continu d'aspiration
-        if (animationTick % 20 == 0) {
-            getWorld().playSound(
-                    null,
-                    targetPos,
-                    SoundEvents.ENTITY_WARDEN_HEARTBEAT,
-                    SoundCategory.HOSTILE,
-                    1.5f,
-                    0.5f + (float) absorptionProgress * 0.5f
-            );
-        }
-
         Vec3d center = getPos();
-        List<FallingBlockEntity> toRemove = new ArrayList<>();
 
-        for (FallingBlockEntity block : flyingBlocks) {
-            if (block.isRemoved() || !block.isAlive()) {
-                toRemove.add(block);
-                continue;
-            }
+        int absorbTick = animationTick - DESCENT_DURATION - BLOCK_COLLECTION_DURATION;
+        double progress = Math.max(0, (double) absorbTick / ABSORPTION_DURATION);
 
-            // Empêche le bloc de se poser sur le sol
-            if (block.isOnGround()) {
-                block.setVelocity(block.getVelocity().multiply(0.0)); // bloque sur le sol
-            }
+        for (BlockDisplayEntity block : flyingBlocks) {
+            if (block.isRemoved()) continue;
 
-            // Force d'aspiration progressive
-            double pullStrength = (0.15 + absorptionProgress * 0.4) * (1.0 + (25.0 / Math.max(block.getPos().subtract(center).length(), 2.0)));
+            Vec3d pos = block.getPos();
+            Vec3d toCenter = center.subtract(pos);
+            double dist = Math.max(toCenter.length(), 0.5);
 
-            Vec3d toCenter = center.subtract(block.getPos());
             Vec3d radial = toCenter.normalize();
+            Vec3d tangent = radial.crossProduct(new Vec3d(0, 1, 0)).normalize();
 
-            // Vecteur tangent aléatoire pour rotation sphérique
-            Vec3d randomAxis = new Vec3d(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
-            Vec3d tangent = radial.crossProduct(randomAxis);
-            if (tangent.lengthSquared() < 0.0001) tangent = radial.crossProduct(new Vec3d(1, 0, 0));
-            tangent = tangent.normalize().multiply(pullStrength * 0.4);
+            double pull = 0.08 + progress * 0.45;
 
-            // Vélocité combinée vers le centre + rotation
-            Vec3d newVel = block.getVelocity()
-                    .add(radial.multiply(pullStrength)) // aspiration
-                    .add(tangent)
-                    .multiply(0.96); // friction légère
+            Vec3d newPos = pos
+                    .add(tangent.multiply(0.35))
+                    .add(radial.multiply(pull * (20.0 / dist)));
 
-            // Limite la vitesse max
-            if (newVel.length() > 2.0) newVel = newVel.normalize().multiply(2.0);
-
-            block.setVelocity(newVel);
-            block.velocityModified = true;
+            block.setPosition(newPos.x, newPos.y, newPos.z);
         }
 
-        // Particules autour du centre
-        if (animationTick % 2 == 0) {
-            serverWorld.spawnParticles(
+        if (getWorld() instanceof ServerWorld sw && animationTick % 2 == 0) {
+            sw.spawnParticles(
                     ParticleTypes.REVERSE_PORTAL,
                     center.x, center.y, center.z,
-                    (int)(30 * (1 + absorptionProgress)),
-                    0.3, 0.3, 0.3,
-                    0.5 + absorptionProgress * 0.5
+                    (int) (40 * (1 + progress)),
+                    0.4, 0.4, 0.4,
+                    0.6
             );
         }
     }
 
+    // ================= CLEANUP =================
+
     private void cleanupBlocks() {
-        // Supprime tous les blocs restants avec effet
-        for (FallingBlockEntity block : flyingBlocks) {
+        if (!(getWorld() instanceof ServerWorld sw)) return;
+
+        for (BlockDisplayEntity block : flyingBlocks) {
             if (!block.isRemoved()) {
-                ((ServerWorld) getWorld()).spawnParticles(
+                sw.spawnParticles(
                         ParticleTypes.POOF,
                         block.getX(), block.getY(), block.getZ(),
-                        10,
-                        0.2, 0.2, 0.2,
-                        0.05
+                        8, 0.2, 0.2, 0.2, 0.05
                 );
                 block.discard();
             }
@@ -316,211 +225,40 @@ public class WormholeSpawnAnimation extends Entity {
         flyingBlocks.clear();
     }
 
-    private void clientAnimation() {
-        if (animationTick <= DESCENT_DURATION) {
-            clientDescentAnimation();
-        } else if (animationTick <= TOTAL_DURATION) {
-            clientAbsorptionAnimation();
-        }
-    }
-
-    private void clientDescentAnimation() {
-        double progress = (double) animationTick / DESCENT_DURATION;
-        double radius = 3.0 * (1 - progress * 0.5);
-
-        // Spirale de particules "sombre"
-        for (int i = 0; i < 15; i++) {
-            double angle = (animationTick * 15 + i * 24) * Math.PI / 180;
-            double spiralRadius = radius * (1 - (i / 15.0) * 0.5);
-
-            double x = getX() + Math.cos(angle) * spiralRadius;
-            double z = getZ() + Math.sin(angle) * spiralRadius;
-            double y = getY() + (random.nextDouble() - 0.5) * 2;
-
-            // Particule principale sombre
-            getWorld().addParticle(
-                    ParticleTypes.SMOKE,
-                    x, y, z,
-                    (getX() - x) * 0.05,
-                    -0.05,
-                    (getZ() - z) * 0.05
-            );
-
-            // Particule secondaire "cendre"
-            if (i % 3 == 0) {
-                getWorld().addParticle(
-                        ParticleTypes.ASH,
-                        x, y, z,
-                        0, -0.02, 0
-                );
-            }
-        }
-
-        // Vortex central plus sombre
-        int centralParticles = (int) (5 + progress * 20);
-        for (int i = 0; i < centralParticles; i++) {
-            getWorld().addParticle(
-                    ParticleTypes.SMOKE,
-                    getX() + (random.nextDouble() - 0.5) * radius * 0.3,
-                    getY() + (random.nextDouble() - 0.5),
-                    getZ() + (random.nextDouble() - 0.5) * radius * 0.3,
-                    0, -0.05 - progress * 0.1, 0
-            );
-        }
-    }
-
-    private void clientAbsorptionAnimation() {
-        int absorptionTick = animationTick - DESCENT_DURATION - BLOCK_COLLECTION_DURATION;
-        double progress = Math.max(0, (double) absorptionTick / ABSORPTION_DURATION);
-
-        // Vortex intense qui grossit
-        for (int i = 0; i < 25; i++) {
-            double angle = (animationTick * 20 + i * 18) * Math.PI / 180;
-            double radius = 5.0 * (1 - progress * 0.2);
-
-            double x = getX() + Math.cos(angle) * radius;
-            double z = getZ() + Math.sin(angle) * radius;
-
-            getWorld().addParticle(
-                    ParticleTypes.PORTAL,
-                    x, getY(), z,
-                    (getX() - x) * 0.3,
-                    -0.15,
-                    (getZ() - z) * 0.3
-            );
-        }
-
-        // Flash final
-        if (absorptionTick >= ABSORPTION_DURATION - 10) {
-            for (int i = 0; i < 50; i++) {
-                getWorld().addParticle(
-                        ParticleTypes.END_ROD,
-                        getX(), getY(), getZ(),
-                        (random.nextDouble() - 0.5) * 1.2,
-                        (random.nextDouble() - 0.5) * 1.2,
-                        (random.nextDouble() - 0.5) * 1.2
-                );
-            }
-        }
-    }
+    // ================= FINAL =================
 
     private void spawnFinalWormhole() {
         finalEntitySpawned = true;
 
-        WormholeEntity wormhole = new WormholeEntity(ModEntities.WORMHOLE, (ServerWorld) getWorld());
-        wormhole.setPosition(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5);
+        WormholeEntity wormhole = new WormholeEntity(
+                ModEntities.WORMHOLE,
+                (ServerWorld) getWorld()
+        );
+        wormhole.setPosition(
+                targetPos.getX() + 0.5,
+                targetPos.getY(),
+                targetPos.getZ() + 0.5
+        );
+
         getWorld().spawnEntity(wormhole);
+        WormholeEntity.setActiveWormhole(wormhole, getWorld().getTime());
 
-        WormholeEntity.setActiveWormhole(wormhole, ((ServerWorld) getWorld()).getTime());
-
-        Chimeras.LOGGER.info("Final wormhole spawned successfully!");
-
-        // Son final d'activation
         getWorld().playSound(
-                null,
-                targetPos,
+                null, targetPos,
                 SoundEvents.BLOCK_BEACON_ACTIVATE,
                 SoundCategory.HOSTILE,
-                3.0f,
-                0.8f
+                3.0f, 0.8f
         );
-
-        // Explosion finale massive
-        ((ServerWorld) getWorld()).spawnParticles(
-                ParticleTypes.EXPLOSION_EMITTER,
-                targetPos.getX() + 0.5,
-                targetPos.getY(),
-                targetPos.getZ() + 0.5,
-                3, 0, 0, 0, 0
-        );
-
-        ((ServerWorld) getWorld()).spawnParticles(
-                ParticleTypes.PORTAL,
-                targetPos.getX() + 0.5,
-                targetPos.getY(),
-                targetPos.getZ() + 0.5,
-                200,
-                3.0, 3.0, 3.0,
-                2.0
-        );
-
-        // Explosion finale lumineuse
-        ((ServerWorld) getWorld()).spawnParticles(
-                ParticleTypes.END_ROD,
-                targetPos.getX() + 0.5,
-                targetPos.getY() + 0.5,
-                targetPos.getZ() + 0.5,
-                200, // nombre de particules
-                1.5, 1.5, 1.5, // dispersion
-                0.1 // vitesse
-        );
-
-        // Vortex lumineux
-        for (int i = 0; i < 100; i++) {
-            double angle = random.nextDouble() * 2 * Math.PI;
-            double radius = 0.5 + random.nextDouble() * 1.5;
-
-            double x = targetPos.getX() + 0.5 + Math.cos(angle) * radius;
-            double y = targetPos.getY() + 0.5 + random.nextDouble() * 2.0;
-            double z = targetPos.getZ() + 0.5 + Math.sin(angle) * radius;
-
-            getWorld().addParticle(
-                    ParticleTypes.SOUL_FIRE_FLAME,
-                    x, y, z,
-                    0, 0.05 + random.nextDouble() * 0.05, 0
-            );
-        }
-
-        double time = getWorld().getTime() + random.nextDouble() * 100;
-        for (int i = 0; i < 40; i++) {
-            double angle = i * (2 * Math.PI / 40) + time * 0.05;
-            double radius = 1.0 + 0.5 * Math.sin(time * 0.1 + i);
-
-            double x = targetPos.getX() + 0.5 + Math.cos(angle) * radius;
-            double y = targetPos.getY() + 0.5 + 0.2 * i; // spirale
-            double z = targetPos.getZ() + 0.5 + Math.sin(angle) * radius;
-
-            getWorld().addParticle(
-                    ParticleTypes.ENCHANT,
-                    x, y, z,
-                    0, 0.02, 0
-            );
-        }
 
         discard();
-    }
-
-    @Override
-    public void remove(RemovalReason reason) {
-        super.remove(reason);
-        cleanupBlocks();
-        if (!finalEntitySpawned) {
-            WormholeEntity.setSpawning(false);
-            Chimeras.LOGGER.warn("WormholeSpawnAnimation removed before completion!");
-        }
     }
 
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {}
 
     @Override
-    protected void readCustomDataFromNbt(NbtCompound nbt) {
-        if (nbt.contains("TargetX")) {
-            int x = nbt.getInt("TargetX");
-            int y = nbt.getInt("TargetY");
-            int z = nbt.getInt("TargetZ");
-            this.targetPos = new BlockPos(x, y, z);
-        }
-        if (nbt.contains("AnimationTick")) {
-            this.animationTick = nbt.getInt("AnimationTick");
-        }
-    }
+    protected void readCustomDataFromNbt(NbtCompound nbt) {}
 
     @Override
-    protected void writeCustomDataToNbt(NbtCompound nbt) {
-        nbt.putInt("TargetX", targetPos.getX());
-        nbt.putInt("TargetY", targetPos.getY());
-        nbt.putInt("TargetZ", targetPos.getZ());
-        nbt.putInt("AnimationTick", animationTick);
-    }
+    protected void writeCustomDataToNbt(NbtCompound nbt) {}
 }

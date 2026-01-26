@@ -2,18 +2,18 @@ package dev.darcosse.chimeras.fabric.renderer;
 
 import dev.darcosse.chimeras.fabric.Chimeras;
 import dev.darcosse.chimeras.fabric.entity.WormholeEntity;
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.EntityRendererFactory;
+import net.minecraft.client.render.entity.model.BipedEntityModel;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.RotationAxis;
 
 public class WormholeRenderer extends EntityRenderer<WormholeEntity> {
-    private static final Identifier TEXTURE = Identifier.of(Chimeras.MOD_ID, "textures/entity/wormhole.png");
+
+    private static final Identifier TEXTURE = new Identifier(Chimeras.MOD_ID, "textures/entity/wormhole.png");
 
     public WormholeRenderer(EntityRendererFactory.Context context) {
         super(context);
@@ -25,68 +25,63 @@ public class WormholeRenderer extends EntityRenderer<WormholeEntity> {
 
         matrices.push();
 
-        // Billboard : toujours orienté vers la caméra
+        // Toujours orienté vers la caméra (billboard)
         matrices.multiply(this.dispatcher.getRotation());
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f));
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f));
 
         // Taille du wormhole
-        float scale = 2.0f;
+        float scale = 2f;
         matrices.scale(scale, scale, scale);
 
-        // Temps pour l’animation
-        float time = (entity.age + tickDelta) * 2.0f;
+        float time = (entity.age + tickDelta) * 2f;
 
-        // === Couche principale ===
+        // Couche principale
         matrices.push();
         matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(time));
-
-        drawQuad(matrices, vertexConsumers, RenderLayer.getEntityTranslucentEmissive(getTexture(entity)), light);
+        drawQuad(matrices, vertexConsumers, ModRenderLayers.wormhole(TEXTURE));
         matrices.pop();
 
-        // === Couche secondaire (plus lente, pour effet vortex) ===
+        // Couche secondaire (vortex plus lent)
         matrices.push();
         matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(-time * 0.5f));
-        matrices.scale(0.8f, 0.8f, 0.8f); // un peu plus petit
-
-        drawQuad(matrices, vertexConsumers, RenderLayer.getEntityTranslucentEmissive(getTexture(entity)), light);
+        matrices.scale(0.8f, 0.8f, 0.8f);
+        drawQuad(matrices, vertexConsumers, ModRenderLayers.wormhole(TEXTURE));
         matrices.pop();
 
         matrices.pop();
-
-        super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light);
     }
 
-    private void drawQuad(MatrixStack matrices, VertexConsumerProvider vertexConsumers, RenderLayer layer, int light) {
+    private void drawQuad(MatrixStack matrices, VertexConsumerProvider vertexConsumers, net.minecraft.client.render.RenderLayer layer) {
         VertexConsumer vertexConsumer = vertexConsumers.getBuffer(layer);
         MatrixStack.Entry entry = matrices.peek();
 
-        vertexConsumer.vertex(entry.getPositionMatrix(), -0.5f, -0.5f, 0.0f)
+        vertexConsumer.vertex(entry.getPositionMatrix(), -0.5f, -0.5f, 0f)
                 .color(255, 255, 255, 255)
-                .texture(0, 0)
-                .overlay(OverlayTexture.DEFAULT_UV)
-                .light(light)
-                .normal(entry, 0.0f, 0.0f, 1.0f);
+                .texture(0f, 0f)
+                .overlay(0)
+                .light(0x00F000F0) // FULL BRIGHT
+                .normal(entry, 0f, 0f, 1f);
 
-        vertexConsumer.vertex(entry.getPositionMatrix(), -0.5f, 0.5f, 0.0f)
+        vertexConsumer.vertex(entry.getPositionMatrix(), -0.5f, 0.5f, 0f)
                 .color(255, 255, 255, 255)
-                .texture(0, 1)
-                .overlay(OverlayTexture.DEFAULT_UV)
-                .light(light)
-                .normal(entry, 0.0f, 0.0f, 1.0f);
+                .texture(0f, 1f)
+                .overlay(0)
+                .light(0x00F000F0)
+                .normal(entry, 0f, 0f, 1f);
 
-        vertexConsumer.vertex(entry.getPositionMatrix(), 0.5f, 0.5f, 0.0f)
+        vertexConsumer.vertex(entry.getPositionMatrix(), 0.5f, 0.5f, 0f)
                 .color(255, 255, 255, 255)
-                .texture(1, 1)
-                .overlay(OverlayTexture.DEFAULT_UV)
-                .light(light)
-                .normal(entry, 0.0f, 0.0f, 1.0f);
+                .texture(1f, 1f)
+                .overlay(0)
+                .light(0x00F000F0)
+                .normal(entry, 0f, 0f, 1f);
 
-        vertexConsumer.vertex(entry.getPositionMatrix(), 0.5f, -0.5f, 0.0f)
+        vertexConsumer.vertex(entry.getPositionMatrix(), 0.5f, -0.5f, 0f)
                 .color(255, 255, 255, 255)
-                .texture(1, 0)
-                .overlay(OverlayTexture.DEFAULT_UV)
-                .light(light)
-                .normal(entry, 0.0f, 0.0f, 1.0f);
+                .texture(1f, 0f)
+                .overlay(0)
+                .light(0x00F000F0)
+                .normal(entry, 0f, 0f, 1f);
     }
 
     @Override
