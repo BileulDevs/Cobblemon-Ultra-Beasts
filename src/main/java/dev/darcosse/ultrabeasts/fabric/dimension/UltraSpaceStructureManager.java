@@ -1,5 +1,9 @@
 package dev.darcosse.ultrabeasts.fabric.dimension;
 
+import com.cobblemon.mod.common.Cobblemon;
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
+import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.cobblemon.mod.common.pokemon.Species;
 import dev.darcosse.ultrabeasts.fabric.UltraBeasts;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.StructurePlacementData;
@@ -11,12 +15,18 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class UltraSpaceStructureManager {
     private static final Identifier[] STRUCTURES = new Identifier[]{
             Identifier.of(UltraBeasts.MOD_ID, "buzzwole")
     };
+
+    private static final Map<String, BlockPos> spawnPositions = Map.of(
+      "buzzwole", new BlockPos(0, 66, 0)
+    );
 
     private static final Map<ServerWorld, BlockPos> placedStructures = new HashMap<>();
 
@@ -28,6 +38,7 @@ public class UltraSpaceStructureManager {
 
         Random random = world.getRandom();
         Identifier chosen = STRUCTURES[random.nextInt(STRUCTURES.length)];
+        String pokemon = chosen.getPath();
 
         StructureTemplate template = world.getStructureTemplateManager().getTemplateOrBlank(chosen);
         BlockPos pos = new BlockPos(0, 64, 0);
@@ -39,6 +50,8 @@ public class UltraSpaceStructureManager {
 
         template.place(world, pos, pos, data, random, 2);
         placedStructures.put(world, pos);
+
+        spawnUltraBeast(world, pokemon, spawnPositions.get(pokemon));
 
         UltraBeasts.LOGGER.info("Placed structure {} at {}", chosen, pos);
     }
@@ -60,5 +73,21 @@ public class UltraSpaceStructureManager {
                     world.setBlockState(pos.add(x, y, z), net.minecraft.block.Blocks.AIR.getDefaultState());
 
         UltraBeasts.LOGGER.info("Removed structure {} at {}", pos, pos);
+    }
+
+    /**
+     * Fait apparaitre le Pokémon correspondant
+     */
+    private static void spawnUltraBeast(ServerWorld world, String pokemon, BlockPos pos) {
+        Pokemon ultraBeast = PokemonSpecies.getByName(pokemon).create(60);
+
+        ultraBeast.sendOut(
+                world,
+                pos.toCenterPos().add(0, 1, 0),
+                null,
+                pokemonEntity -> {
+                    return null;
+                }
+        );
     }
 }

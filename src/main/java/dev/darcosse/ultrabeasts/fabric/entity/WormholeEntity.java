@@ -289,11 +289,19 @@ public class WormholeEntity extends Entity {
                         dx, dy, dz,
                         0.0
                 );
+
+                if (layer == 0 && random.nextFloat() < 0.02f) {
+                    world.spawnParticles(
+                            ModParticles.SPARK,
+                            x, y, z,
+                            1,
+                            dx, dy, dz,
+                            0.0
+                    );
+                }
             }
         }
     }
-
-
 
     /**
      * Place un bloc de lumière à la position du portail
@@ -357,22 +365,22 @@ public class WormholeEntity extends Entity {
     }
 
     private void teleportToChimerasDimension(ServerPlayerEntity player) {
-        ServerWorld chimerasWorld = player.getServer().getWorld(ModDimensions.ULTRA_SPACE_DIMENSION);
-        if (chimerasWorld != null) {
+        ServerWorld ultraSpace = player.getServer().getWorld(ModDimensions.ULTRA_SPACE_DIMENSION);
+        if (ultraSpace != null) {
             if (player.getWorld().getRegistryKey().equals(World.OVERWORLD)) {
                 savedPositions.put(player.getUuid(), player.getBlockPos());
             }
 
-            checkAndPlaceChimerasCore(chimerasWorld);
-            killAllPokemonsOfWorld(chimerasWorld);
+            checkAndPlaceChimerasCore(ultraSpace);
+            killAllPokemonsOfWorld(ultraSpace);
             grantChimerasAdvancement(player);
 
-            UltraSpaceStructureManager.placeStructure(chimerasWorld);
+            UltraSpaceStructureManager.placeStructure(ultraSpace);
 
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 100, 254, false, false, true));
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 254, false, false, true));
 
-            player.teleport(chimerasWorld, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
+            player.teleport(ultraSpace, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
 
             MinecraftServer server = player.getServer();
             new Thread(() -> {
@@ -382,7 +390,7 @@ public class WormholeEntity extends Entity {
                         if (player.isAlive() && !player.isRemoved()) {
                             BlockPos playerPos = player.getBlockPos();
 
-                            chimerasWorld.playSound(
+                            ultraSpace.playSound(
                                     null,
                                     playerPos,
                                     SoundEvents.ENTITY_ENDERMAN_SCREAM,
@@ -391,7 +399,7 @@ public class WormholeEntity extends Entity {
                                     1.0f
                             );
 
-                            chimerasWorld.playSound(
+                            ultraSpace.playSound(
                                     null,
                                     playerPos,
                                     SoundEvents.ENTITY_WARDEN_HEARTBEAT,
@@ -450,9 +458,9 @@ public class WormholeEntity extends Entity {
         }
     }
 
-    public static void killAllPokemonsOfWorld(ServerWorld chimerasWorld) {
-        if (chimerasWorld != null) {
-            chimerasWorld.getEntitiesByType(CobblemonEntities.POKEMON, pokemonEntity -> {
+    public static void killAllPokemonsOfWorld(ServerWorld ultraSpace) {
+        if (ultraSpace != null) {
+            ultraSpace.getEntitiesByType(CobblemonEntities.POKEMON, pokemonEntity -> {
                 pokemonEntity.discard();
                 return false;
             });

@@ -45,10 +45,11 @@ public class WormholeParticle extends SpriteBillboardParticle {
         float progress = (float) this.age / this.maxAge;
         progress = Math.max(0, Math.min(1, progress));
 
-        this.red = 0.4f + (progress * 0.6f);
-        this.green = 0.9f + (progress * 0.1f);
-        this.blue = 1.0f;
-        this.alpha = 0.6f + (progress * 0.4f);
+        // Bleu ciel doux → Blanc lumineux avec touche de lavande
+        this.red = 0.7f + (progress * 0.3f);    // 0.7 → 1.0 (presque blanc)
+        this.green = 0.8f + (progress * 0.2f);  // 0.8 → 1.0 (presque blanc)
+        this.blue = 1.0f;                        // 1.0 constant (toujours lumineux)
+        this.alpha = 0.5f + (progress * 0.4f);  // 0.5 → 0.9 (délicat)
     }
 
     @Override

@@ -26,10 +26,8 @@ public class UltraBeasts implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        // Charger la config
         ConfigManager.loadConfig();
 
-        // Initialisations
         ModParticles.register();
         ModBlocks.registerBlocks();
         ModItems.registerItems();
@@ -42,10 +40,8 @@ public class UltraBeasts implements ModInitializer {
         UnbreakableBlocksHandler.initialize();
         EventsHandler.initializeEvents();
 
-        // Tick serveur
         ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
 
-        // Nettoyage à l'arrêt
         ServerLifecycleEvents.SERVER_STOPPING.register(this::onServerStopping);
 
         LOGGER.info("Ultra-Beasts mod initialized!");
