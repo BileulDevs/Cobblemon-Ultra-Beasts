@@ -33,6 +33,7 @@ public class UltraBeasts implements ModInitializer {
         ModBlocks.registerBlocks();
         ModItems.registerItems();
         ModGenerators.initialize();
+        ModParticles.register();
         ModEntities.initialize();
         ModSounds.registerSounds();
 

@@ -4,10 +4,7 @@ import com.cobblemon.mod.common.CobblemonEntities;
 import dev.darcosse.ultrabeasts.fabric.UltraBeasts;
 import dev.darcosse.ultrabeasts.fabric.config.ConfigManager;
 import dev.darcosse.ultrabeasts.fabric.dimension.UltraSpaceStructureManager;
-import dev.darcosse.ultrabeasts.fabric.registry.ModBlocks;
-import dev.darcosse.ultrabeasts.fabric.registry.ModDimensions;
-import dev.darcosse.ultrabeasts.fabric.registry.ModEntities;
-import dev.darcosse.ultrabeasts.fabric.registry.ModSounds;
+import dev.darcosse.ultrabeasts.fabric.registry.*;
 import net.minecraft.advancement.AdvancementEntry;
 import net.minecraft.advancement.AdvancementProgress;
 import net.minecraft.block.Blocks;
@@ -235,7 +232,42 @@ public class WormholeEntity extends Entity {
 
     private void spawnParticles() {
 
+        // 🌫 couche externe : fumée lente
+        spawnLayer(2.4, 20);
+
+        // 🔮 couche intermédiaire
+        spawnLayer(1.6, 15);
+
+        // ⚡ couche interne : énergie rapide
+        spawnLayer(0.9, 10);
     }
+
+
+    private void spawnLayer(double maxRadius, int count) {
+        if (!(this.getWorld() instanceof ServerWorld world)) return;
+
+        net.minecraft.util.math.random.Random random = world.random;
+
+        for (int i = 0; i < count; i++) {
+            double r = Math.sqrt(random.nextDouble()) * maxRadius;
+            double angle = random.nextDouble() * Math.PI * 2;
+
+            double x = this.getX() + r * Math.cos(angle);
+            double z = this.getZ() + r * Math.sin(angle);
+            double y = this.getY() + random.nextDouble() * 2 - 1;
+
+            // ⚠ Fabric ServerWorld.spawnParticles ne prend PAS velocityX/Y/Z pour ce type de particule
+            //    Il faut utiliser offsetX/Y/Z à la place et speed pour la vitesse initiale
+            world.spawnParticles(
+                    ModParticles.WORMHOLE,
+                    x, y, z,
+                    1,          // count
+                    0, 0, 0,    // offsetX, offsetY, offsetZ = 0 pour particules centrées
+                    0.0         // speed initiale = 0, la logique de mouvement se fait côté client
+            );
+        }
+    }
+
 
     /**
      * Place un bloc de lumière à la position du portail
