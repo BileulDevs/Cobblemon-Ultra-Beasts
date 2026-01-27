@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.darcosse"
-version = "3+Cobblemon-1.7.2"
+version = "3.0+Cobblemon-1.7.2"
 
 architectury {
     platformSetupLoomIde()

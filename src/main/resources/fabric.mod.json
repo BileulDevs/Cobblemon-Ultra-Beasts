@@ -3,7 +3,7 @@
   "id": "cobblemon_ultrabeast",
   "version": "${version}",
   "name": "Cobblemon Ultra-Beasts",
-  "description": "A mod that adds all Ultra Beasts and their dimensions",
+  "description": "A mod that adds all Ultra-Beasts and Ultra-Space dimension",
   "authors": [
     "Darcosse"
   ],
@@ -12,10 +12,10 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "dev.darcosse.chimeras.fabric.Chimeras"
+      "dev.darcosse.ultrabeasts.fabric.UltraBeasts"
     ],
     "client": [
-      "dev.darcosse.chimeras.fabric.ChimerasClient"
+      "dev.darcosse.ultrabeasts.fabric.client.UltraBeastsClient"
     ]
   },
   "depends": {

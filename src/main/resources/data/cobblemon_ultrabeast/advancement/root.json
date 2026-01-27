@@ -4,7 +4,7 @@
       "id": "cobblemon:pokemon_model",
       "components": {
         "cobblemon:pokemon_item": {
-          "species": "cobblemon:necrozma",
+          "species": "cobblemon:buzzwole",
           "aspects": []
         }
       }
@@ -24,7 +24,7 @@
     "enter_dimension": {
       "trigger": "minecraft:changed_dimension",
       "conditions": {
-        "to": "cobblemon_ultrabeast:chimeras_dimension"
+        "to": "cobblemon_ultrabeast:ultra_space"
       }
     }
   },
