@@ -17,7 +17,7 @@ public class ModRenderLayers {
                         .texture(new RenderPhase.Texture(texture, false, false))
                         .transparency(RenderPhase.TRANSLUCENT_TRANSPARENCY)
                         .cull(RenderPhase.DISABLE_CULLING)
-                        .lightmap(RenderPhase.ENABLE_LIGHTMAP)
+                        .lightmap(RenderPhase.DISABLE_LIGHTMAP)
                         .overlay(RenderPhase.DISABLE_OVERLAY_COLOR)
                         .build(false));
     }
