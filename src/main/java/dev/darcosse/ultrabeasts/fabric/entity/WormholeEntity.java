@@ -231,42 +231,68 @@ public class WormholeEntity extends Entity {
     }
 
     private void spawnParticles() {
-
-        // 🌫 couche externe : fumée lente
-        spawnLayer(2.4, 20);
-
-        // 🔮 couche intermédiaire
-        spawnLayer(1.6, 15);
-
-        // ⚡ couche interne : énergie rapide
-        spawnLayer(0.9, 10);
-    }
-
-
-    private void spawnLayer(double maxRadius, int count) {
         if (!(this.getWorld() instanceof ServerWorld world)) return;
 
-        net.minecraft.util.math.random.Random random = world.random;
+        double centerX = this.getX();
+        double centerY = this.getY();
+        double centerZ = this.getZ();
 
-        for (int i = 0; i < count; i++) {
-            double r = Math.sqrt(random.nextDouble()) * maxRadius;
-            double angle = random.nextDouble() * Math.PI * 2;
+        int particleCount = 40; // particules par cercle
+        double radius = 1.7;    // rayon du cercle initial
+        int layers = 6;         // nombre de cercles pour effet entonnoir
 
-            double x = this.getX() + r * Math.cos(angle);
-            double z = this.getZ() + r * Math.sin(angle);
-            double y = this.getY() + random.nextDouble() * 2 - 1;
+        // Inclinaison du cercle vertical
+        double tilt = Math.toRadians(20); // cercle légèrement incliné
 
-            // ⚠ Fabric ServerWorld.spawnParticles ne prend PAS velocityX/Y/Z pour ce type de particule
-            //    Il faut utiliser offsetX/Y/Z à la place et speed pour la vitesse initiale
-            world.spawnParticles(
-                    ModParticles.WORMHOLE,
-                    x, y, z,
-                    1,          // count
-                    0, 0, 0,    // offsetX, offsetY, offsetZ = 0 pour particules centrées
-                    0.0         // speed initiale = 0, la logique de mouvement se fait côté client
-            );
+        // Vecteur d'inclinaison pour décaler le point final derrière
+        double tiltX = 0;
+        double tiltY = Math.sin(tilt);
+        double tiltZ = -Math.cos(tilt); // "arrière" suivant l'inclinaison
+
+        // Point final : 3 blocs derrière le cercle principal
+        double finalX = centerX + tiltX * 4;
+        double finalY = centerY + tiltY * 4;
+        double finalZ = centerZ + tiltZ * 4;
+
+        for (int layer = 0; layer < layers; layer++) {
+            // Réduire le rayon progressivement pour donner l'effet de convergence
+            double layerFactor = 1.0 - (layer / (double)(layers - 1)); // 1 → 0
+            double currentRadius = radius * layerFactor;
+
+            // Déplacement progressif vers l'arrière
+            double layerOffsetX = tiltX * 4 * (layer / (double)(layers - 1));
+            double layerOffsetY = tiltY * 4 * (layer / (double)(layers - 1));
+            double layerOffsetZ = tiltZ * 4 * (layer / (double)(layers - 1));
+
+            for (int i = 0; i < particleCount; i++) {
+                double angle = 2 * Math.PI * i / particleCount;
+
+                // Position initiale sur le cercle incliné
+                double x = centerX + currentRadius * Math.cos(angle) + layerOffsetX;
+                double y = centerY + currentRadius * Math.sin(angle) * Math.cos(tilt) + layerOffsetY;
+                double z = centerZ + currentRadius * Math.sin(angle) * Math.sin(tilt) + layerOffsetZ;
+
+                // Calculer vecteur de convergence vers le point final
+                double dx = finalX - x;
+                double dy = finalY - y;
+                double dz = finalZ - z;
+
+                // Convergence douce
+                dx /= 20;
+                dy /= 20;
+                dz /= 20;
+
+                world.spawnParticles(
+                        ModParticles.WORMHOLE,
+                        x, y, z,
+                        1,
+                        dx, dy, dz,
+                        0.0
+                );
+            }
         }
     }
+
 
 
     /**

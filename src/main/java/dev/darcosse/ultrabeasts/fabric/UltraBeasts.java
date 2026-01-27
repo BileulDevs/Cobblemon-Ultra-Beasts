@@ -30,10 +30,10 @@ public class UltraBeasts implements ModInitializer {
         ConfigManager.loadConfig();
 
         // Initialisations
+        ModParticles.register();
         ModBlocks.registerBlocks();
         ModItems.registerItems();
         ModGenerators.initialize();
-        ModParticles.register();
         ModEntities.initialize();
         ModSounds.registerSounds();
 

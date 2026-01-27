@@ -8,40 +8,51 @@ import net.minecraft.client.world.ClientWorld;
 public class WormholeParticle extends SpriteBillboardParticle {
 
     private final double centerX;
+    private final double centerY;
     private final double centerZ;
+    private final double initialDistance;
 
-    protected WormholeParticle(ClientWorld world, double x, double y, double z,
-                               double centerX, double centerY, double radius,
+    public WormholeParticle(ClientWorld world, double x, double y, double z,
+                               double velX, double velY, double velZ,
                                SpriteProvider spriteProvider) {
         super(world, x, y, z, 0, 0, 0);
-        this.centerX = centerX;
-        this.centerZ = centerY; // à corriger si nécessaire
-        this.scale = 0.3f;
+
+        this.centerX = velX;
+        this.centerY = velY;
+        this.centerZ = velZ;
+
+        double dx = x - centerX;
+        double dy = y - centerY;
+        double dz = z - centerZ;
+        this.initialDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
         this.maxAge = 40;
-        this.setSprite(spriteProvider.getSprite(0, 0));
+        this.scale = 0.5f;
+        this.setSprite(spriteProvider);
     }
 
     @Override
     public void tick() {
-        super.tick();
+        this.prevPosX = this.x;
+        this.prevPosY = this.y;
+        this.prevPosZ = this.z;
 
-        // Convergence vers le centre
-        double dx = centerX - this.x;
-        double dz = centerZ - this.z;
-        this.velocityX += dx * 0.05;
-        this.velocityZ += dz * 0.05;
+        if (this.age++ >= this.maxAge) {
+            this.markDead();
+            return;
+        }
 
-        // Spirale légère
-        this.velocityX += Math.sin(age * 0.3) * 0.01;
-        this.velocityZ += Math.cos(age * 0.3) * 0.01;
+        float progress = (float) this.age / this.maxAge;
+        progress = Math.max(0, Math.min(1, progress));
 
-        this.move(this.velocityX, this.velocityY, this.velocityZ);
-
-        if (this.age++ >= this.maxAge) this.markDead();
+        this.red = 0.4f + (progress * 0.6f);
+        this.green = 0.9f + (progress * 0.1f);
+        this.blue = 1.0f;
+        this.alpha = 0.6f + (progress * 0.4f);
     }
 
     @Override
     public ParticleTextureSheet getType() {
-        return null;
+        return ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT;
     }
 }

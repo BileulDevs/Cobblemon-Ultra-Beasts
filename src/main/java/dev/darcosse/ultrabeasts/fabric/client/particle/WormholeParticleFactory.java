@@ -1,6 +1,5 @@
 package dev.darcosse.ultrabeasts.fabric.client.particle;
 
-import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleFactory;
 import net.minecraft.client.particle.SpriteProvider;
@@ -16,9 +15,9 @@ public class WormholeParticleFactory implements ParticleFactory<SimpleParticleTy
     }
 
     @Override
-    public Particle createParticle(SimpleParticleType type, ClientWorld world, double x, double y, double z,
-                                   double centerX, double centerY, double radius) {
-        // Les paramètres centerX, centerY, radius sont ceux envoyés par le serveur depuis spawnParticles()
-        return new WormholeParticle(world, x, y, z, centerX, centerY, radius, spriteProvider);
+    public Particle createParticle(SimpleParticleType type, ClientWorld world,
+                                   double x, double y, double z,
+                                   double velX, double velY, double velZ) {
+        return new WormholeParticle(world, x, y, z, velX, velY, velZ, this.spriteProvider);
     }
 }
