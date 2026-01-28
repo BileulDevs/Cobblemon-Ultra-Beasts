@@ -90,11 +90,7 @@ public class WormholeEntity extends Entity {
                 ambientSoundTimer = 0;
             }
 
-            particleTimer++;
-            if (particleTimer >= PARTICLE_INTERVAL) {
-                spawnParticles();
-                particleTimer = 0;
-            }
+            summonPortal();
         }
     }
 
@@ -230,30 +226,31 @@ public class WormholeEntity extends Entity {
         isSpawning = false;
     }
 
-    private void spawnParticles() {
+    private void summonPortal() {
         if (!(this.getWorld() instanceof ServerWorld world)) return;
 
         double radius = 1.7;
-        // On spawn des particules à chaque tick pour créer le flux continu
-        for (int i = 0; i < 80; i++) { // Augmente ce nombre pour plus de densité
+        // On récupère les coordonnées actuelles de l'entité
+        double centerX = this.getX();
+        double centerY = this.getY();
+        double centerZ = this.getZ();
+
+        for (int i = 0; i < 80; i++) {
             double angle = world.random.nextDouble() * 2 * Math.PI;
 
-            // Position de départ sur le cercle (le bord du portail)
-            double startX = this.getX() + Math.cos(angle) * radius;
-            double startY = this.getY() + Math.sin(angle) * radius;
-            double startZ = this.getZ();
+            double startX = centerX + Math.cos(angle) * radius;
+            double startY = centerY + Math.sin(angle) * radius;
+            double startZ = centerZ;
 
-            // Destination : le centre exact, mais 2 blocs derrière (axe Z)
-            double destX = this.getX();
-            double destY = this.getY();
-            double destZ = this.getZ() - 2.0;
-
+            // On envoie le centre et la profondeur (Z - 2)
             world.spawnParticles(
                     ModParticles.WORMHOLE,
                     startX, startY, startZ,
-                    0,
-                    destX, destY, destZ, // On passe la destination ici
-                    0.0
+                    0,             // Count doit être 0
+                    centerX,       // vX
+                    centerY,       // vY
+                    centerZ - 2.0, // vZ
+                    0.0            // speed (0 car count est 0)
             );
         }
     }
@@ -332,8 +329,7 @@ public class WormholeEntity extends Entity {
 
             UltraSpaceStructureManager.placeStructure(ultraSpace);
 
-            player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 100, 254, false, false, true));
-            player.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 254, false, false, true));
+            player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 254, false, false, true));
 
             player.teleport(ultraSpace, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
 
