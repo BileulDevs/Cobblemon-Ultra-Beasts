@@ -6,29 +6,24 @@ import net.minecraft.client.particle.SpriteProvider;
 import net.minecraft.client.world.ClientWorld;
 
 public class WormholeParticle extends SpriteBillboardParticle {
-
-    private final double centerX;
-    private final double centerY;
-    private final double centerZ;
-    private final double initialDistance;
+    private final double startX, startY, startZ;
+    private final double destX, destY, destZ;
+    private final double orbitOffset;
 
     public WormholeParticle(ClientWorld world, double x, double y, double z,
-                               double velX, double velY, double velZ,
-                               SpriteProvider spriteProvider) {
+                            double vX, double vY, double vZ, SpriteProvider sprite) {
         super(world, x, y, z, 0, 0, 0);
+        this.startX = x;
+        this.startY = y;
+        this.startZ = z;
+        this.destX = vX;
+        this.destY = vY;
+        this.destZ = vZ;
 
-        this.centerX = velX;
-        this.centerY = velY;
-        this.centerZ = velZ;
-
-        double dx = x - centerX;
-        double dy = y - centerY;
-        double dz = z - centerZ;
-        this.initialDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-        this.maxAge = 40;
-        this.scale = 0.5f;
-        this.setSprite(spriteProvider);
+        this.orbitOffset = world.random.nextDouble() * Math.PI * 2;
+        this.maxAge = 40; // Temps pour parcourir les 2 blocs
+        this.scale = 0.4f;
+        this.setSprite(sprite);
     }
 
     @Override
@@ -42,14 +37,25 @@ public class WormholeParticle extends SpriteBillboardParticle {
             return;
         }
 
+        // 1. Calcul de la progression (0.0 au début, 1.0 à la fin)
         float progress = (float) this.age / this.maxAge;
-        progress = Math.max(0, Math.min(1, progress));
 
-        // Bleu ciel doux → Blanc lumineux avec touche de lavande
-        this.red = 0.7f + (progress * 0.3f);    // 0.7 → 1.0 (presque blanc)
-        this.green = 0.8f + (progress * 0.2f);  // 0.8 → 1.0 (presque blanc)
-        this.blue = 1.0f;                        // 1.0 constant (toujours lumineux)
-        this.alpha = 0.5f + (progress * 0.4f);  // 0.5 → 0.9 (délicat)
+        // 2. Déplacement linéaire sur l'axe Z
+        // La particule part de sa position d'origine (startZ)
+        // et recule de 2 blocs (progress * 2.0)
+        this.z = startZ - (progress * 2.0);
+
+        if (this.y > destY) {
+            this.y = this.y - 0.3;
+        } else if (this.y < destY) {
+            this.y = this.y + 0.3;
+        }
+
+
+
+        // 3. Gestion de l'opacité (Optionnel mais recommandé)
+        // La particule devient transparente vers la fin pour éviter un "pop" sec
+        this.alpha = 1.0f - progress;
     }
 
     @Override

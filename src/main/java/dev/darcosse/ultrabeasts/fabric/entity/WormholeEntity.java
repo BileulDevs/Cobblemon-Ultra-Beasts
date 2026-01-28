@@ -233,73 +233,28 @@ public class WormholeEntity extends Entity {
     private void spawnParticles() {
         if (!(this.getWorld() instanceof ServerWorld world)) return;
 
-        double centerX = this.getX();
-        double centerY = this.getY();
-        double centerZ = this.getZ();
+        double radius = 1.7;
+        // On spawn des particules à chaque tick pour créer le flux continu
+        for (int i = 0; i < 80; i++) { // Augmente ce nombre pour plus de densité
+            double angle = world.random.nextDouble() * 2 * Math.PI;
 
-        int particleCount = 40; // particules par cercle
-        double radius = 1.7;    // rayon du cercle initial
-        int layers = 6;         // nombre de cercles pour effet entonnoir
+            // Position de départ sur le cercle (le bord du portail)
+            double startX = this.getX() + Math.cos(angle) * radius;
+            double startY = this.getY() + Math.sin(angle) * radius;
+            double startZ = this.getZ();
 
-        // Inclinaison du cercle vertical
-        double tilt = Math.toRadians(20); // cercle légèrement incliné
+            // Destination : le centre exact, mais 2 blocs derrière (axe Z)
+            double destX = this.getX();
+            double destY = this.getY();
+            double destZ = this.getZ() - 2.0;
 
-        // Vecteur d'inclinaison pour décaler le point final derrière
-        double tiltX = 0;
-        double tiltY = Math.sin(tilt);
-        double tiltZ = -Math.cos(tilt); // "arrière" suivant l'inclinaison
-
-        // Point final : 3 blocs derrière le cercle principal
-        double finalX = centerX + tiltX * 4;
-        double finalY = centerY + tiltY * 4;
-        double finalZ = centerZ + tiltZ * 4;
-
-        for (int layer = 0; layer < layers; layer++) {
-            // Réduire le rayon progressivement pour donner l'effet de convergence
-            double layerFactor = 1.0 - (layer / (double)(layers - 1)); // 1 → 0
-            double currentRadius = radius * layerFactor;
-
-            // Déplacement progressif vers l'arrière
-            double layerOffsetX = tiltX * 4 * (layer / (double)(layers - 1));
-            double layerOffsetY = tiltY * 4 * (layer / (double)(layers - 1));
-            double layerOffsetZ = tiltZ * 4 * (layer / (double)(layers - 1));
-
-            for (int i = 0; i < particleCount; i++) {
-                double angle = 2 * Math.PI * i / particleCount;
-
-                // Position initiale sur le cercle incliné
-                double x = centerX + currentRadius * Math.cos(angle) + layerOffsetX;
-                double y = centerY + currentRadius * Math.sin(angle) * Math.cos(tilt) + layerOffsetY;
-                double z = centerZ + currentRadius * Math.sin(angle) * Math.sin(tilt) + layerOffsetZ;
-
-                // Calculer vecteur de convergence vers le point final
-                double dx = finalX - x;
-                double dy = finalY - y;
-                double dz = finalZ - z;
-
-                // Convergence douce
-                dx /= 20;
-                dy /= 20;
-                dz /= 20;
-
-                world.spawnParticles(
-                        ModParticles.WORMHOLE,
-                        x, y, z,
-                        1,
-                        dx, dy, dz,
-                        0.0
-                );
-
-                if (layer == 0 && random.nextFloat() < 0.02f) {
-                    world.spawnParticles(
-                            ModParticles.SPARK,
-                            x, y, z,
-                            1,
-                            dx, dy, dz,
-                            0.0
-                    );
-                }
-            }
+            world.spawnParticles(
+                    ModParticles.WORMHOLE,
+                    startX, startY, startZ,
+                    0,
+                    destX, destY, destZ, // On passe la destination ici
+                    0.0
+            );
         }
     }
 
