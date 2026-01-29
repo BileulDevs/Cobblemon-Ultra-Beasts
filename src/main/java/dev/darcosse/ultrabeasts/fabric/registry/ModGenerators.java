@@ -15,6 +15,6 @@ public class ModGenerators {
                 VoidChunkGenerator.CODEC
         );
 
-        UltraBeasts.LOGGER.info("Generators registered!");
+        UltraBeasts.LOGGER.info("Registering Generators for " + UltraBeasts.MOD_ID);
     }
 }

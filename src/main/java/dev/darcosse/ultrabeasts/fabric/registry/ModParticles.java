@@ -24,5 +24,7 @@ public class ModParticles {
                 Identifier.of(UltraBeasts.MOD_ID, "spark"),
                 SPARK
         );
+
+        UltraBeasts.LOGGER.info("Registering Particles for " + UltraBeasts.MOD_ID);
     }
 }

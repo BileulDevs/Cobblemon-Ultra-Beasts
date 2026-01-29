@@ -1,6 +1,7 @@
 package dev.darcosse.ultrabeasts.fabric.registry;
 
 import dev.darcosse.ultrabeasts.fabric.UltraBeasts;
+import dev.darcosse.ultrabeasts.fabric.entity.ReturnWormholeEntity;
 import dev.darcosse.ultrabeasts.fabric.entity.WormholeEntity;
 import dev.darcosse.ultrabeasts.fabric.entity.WormholeSpawnAnimation;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
@@ -24,6 +25,11 @@ public class ModEntities {
             .dimensions(EntityDimensions.fixed(2.0f, 2.0f))
             .build();
 
+    public static final EntityType<ReturnWormholeEntity> RETURN_WORMHOLE = FabricEntityTypeBuilder
+            .create(SpawnGroup.MISC, ReturnWormholeEntity::new)
+            .dimensions(EntityDimensions.fixed(1.0f, 1.0f))
+            .build();
+
     public static void initialize() {
         Registry.register(
                 Registries.ENTITY_TYPE,
@@ -36,6 +42,12 @@ public class ModEntities {
                 WORMHOLE_ANIMATION
         );
 
-        UltraBeasts.LOGGER.info("Entities registered!");
+        Registry.register(
+                Registries.ENTITY_TYPE,
+                Identifier.of(UltraBeasts.MOD_ID, "return_wormhole"),
+                RETURN_WORMHOLE
+        );
+
+        UltraBeasts.LOGGER.info("Registering Entities for " + UltraBeasts.MOD_ID);
     }
 }

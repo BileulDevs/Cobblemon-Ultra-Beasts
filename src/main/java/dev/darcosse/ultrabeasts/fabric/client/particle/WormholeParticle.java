@@ -1,10 +1,12 @@
 package dev.darcosse.ultrabeasts.fabric.client.particle;
 
+import dev.darcosse.ultrabeasts.fabric.entity.ReturnWormholeEntity;
 import dev.darcosse.ultrabeasts.fabric.entity.WormholeEntity;
 import net.minecraft.client.particle.ParticleTextureSheet;
 import net.minecraft.client.particle.SpriteBillboardParticle;
 import net.minecraft.client.particle.SpriteProvider;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.util.math.Box;
 
 public class WormholeParticle extends SpriteBillboardParticle {
@@ -27,13 +29,15 @@ public class WormholeParticle extends SpriteBillboardParticle {
             this.destZ = vZ;
         } else {
             Box searchBox = new Box(x - 5, y - 5, z - 5, x + 5, y + 5, z + 5);
-            java.util.List<WormholeEntity> entities = world.getEntitiesByClass(WormholeEntity.class, searchBox, entity -> true);
 
-            if (!entities.isEmpty()) {
-                WormholeEntity portal = entities.getFirst();
+            Entity portal = world.getEntitiesByClass(Entity.class, searchBox,
+                            e -> e instanceof WormholeEntity || e instanceof ReturnWormholeEntity)
+                    .stream().findFirst().orElse(null);
+
+            if (portal != null) {
                 this.destX = portal.getX();
                 this.destY = portal.getY();
-                this.destZ = portal.getZ() - 3.0;
+                this.destZ = portal.getZ() -3.0;
             } else {
                 this.destX = x;
                 this.destY = y;

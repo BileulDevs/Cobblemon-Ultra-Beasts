@@ -4,6 +4,7 @@ import dev.darcosse.ultrabeasts.fabric.client.particle.SparkParticleFactory;
 import dev.darcosse.ultrabeasts.fabric.client.particle.WormholeParticleFactory;
 import dev.darcosse.ultrabeasts.fabric.registry.ModEntities;
 import dev.darcosse.ultrabeasts.fabric.registry.ModParticles;
+import dev.darcosse.ultrabeasts.fabric.renderer.ReturnWormholeRenderer;
 import dev.darcosse.ultrabeasts.fabric.renderer.WormholeRenderer;
 import dev.darcosse.ultrabeasts.fabric.renderer.WormholeSpawnAnimationRenderer;
 import net.fabricmc.api.ClientModInitializer;
@@ -16,6 +17,7 @@ public class UltraBeastsClient implements ClientModInitializer {
     public void onInitializeClient() {
         EntityRendererRegistry.register(ModEntities.WORMHOLE, WormholeRenderer::new);
         EntityRendererRegistry.register(ModEntities.WORMHOLE_ANIMATION, WormholeSpawnAnimationRenderer::new);
+        EntityRendererRegistry.register(ModEntities.RETURN_WORMHOLE, ReturnWormholeRenderer::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.WORMHOLE, WormholeParticleFactory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.SPARK, SparkParticleFactory::new);
     }

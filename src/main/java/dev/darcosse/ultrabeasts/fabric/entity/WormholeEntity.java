@@ -73,18 +73,18 @@ public class WormholeEntity extends Entity {
                 return;
             }
 
-            ambientSoundTimer++;
-            if (ambientSoundTimer >= AMBIENT_SOUND_LENGTH_TICKS || ambientSoundTimer == 1) {
-                world.playSound(
-                        null,
-                        this.getBlockPos(),
-                        ModSounds.PORTAL_AMBIENT,
-                        SoundCategory.HOSTILE,
-                        1.0f,
-                        0.5f
-                );
-                ambientSoundTimer = 0;
-            }
+//            ambientSoundTimer++;
+//            if (ambientSoundTimer >= AMBIENT_SOUND_LENGTH_TICKS || ambientSoundTimer == 1) {
+//                world.playSound(
+//                        null,
+//                        this.getBlockPos(),
+//                        ModSounds.WORMHOLE_AMBIENT,
+//                        SoundCategory.HOSTILE,
+//                        1.0f,
+//                        0.5f
+//                );
+//                ambientSoundTimer = 0;
+//            }
 
             summonPortal();
         }
@@ -315,7 +315,6 @@ public class WormholeEntity extends Entity {
                 savedPositions.put(player.getUuid(), player.getBlockPos());
             }
 
-            checkAndPlaceChimerasCore(ultraSpace);
             killAllPokemonsOfWorld(ultraSpace);
             grantUltraBeastsAdvancement(player);
 
@@ -324,6 +323,10 @@ public class WormholeEntity extends Entity {
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 254, false, false, true));
 
             player.teleport(ultraSpace, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
+
+            ReturnWormholeEntity returnPortal = new ReturnWormholeEntity(ModEntities.RETURN_WORMHOLE, ultraSpace);
+            returnPortal.setPosition(0.5, 83, -16.5);
+            ultraSpace.spawnEntity(returnPortal);
 
             MinecraftServer server = player.getServer();
             new Thread(() -> {
@@ -377,33 +380,24 @@ public class WormholeEntity extends Entity {
         isSpawning = spawning;
     }
 
-    public static void checkAndPlaceChimerasCore(ServerWorld world) {
-        BlockPos centerPos = new BlockPos(0, 84, 0);
-
-        boolean coreExists = false;
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                BlockPos checkPos = centerPos.add(x, 0, z);
-                if (world.getBlockState(checkPos).isOf(ModBlocks.CHIMERAS_CORE_BLOCK)) {
-                    coreExists = true;
-                    break;
-                }
-            }
-            if (coreExists) break;
-        }
-
-        if (!coreExists) {
-            world.setBlockState(centerPos, ModBlocks.CHIMERAS_CORE_BLOCK.getDefaultState());
-        }
+    /**
+     * Fonction pour aide au clear commande
+     */
+    public static void clearWormhole() {
+        activeWormhole = null;
+        isSpawning = false;
     }
 
     public static void killAllPokemonsOfWorld(ServerWorld ultraSpace) {
-        if (ultraSpace != null) {
-            ultraSpace.getEntitiesByType(CobblemonEntities.POKEMON, pokemonEntity -> {
-                pokemonEntity.discard();
-                return false;
-            });
+        if (ultraSpace == null || ultraSpace.getPlayers().isEmpty()) {
+            return;
         }
+
+        ultraSpace.iterateEntities().forEach(entity -> {
+            if (entity != null && entity.getType() == CobblemonEntities.POKEMON) {
+                entity.discard();
+            }
+        });
     }
 
     private void grantUltraBeastsAdvancement(ServerPlayerEntity player) {

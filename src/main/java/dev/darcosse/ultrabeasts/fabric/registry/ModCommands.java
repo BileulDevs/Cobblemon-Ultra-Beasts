@@ -1,5 +1,6 @@
 package dev.darcosse.ultrabeasts.fabric.registry;
 
+import dev.darcosse.ultrabeasts.fabric.UltraBeasts;
 import dev.darcosse.ultrabeasts.fabric.config.ConfigManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
@@ -18,6 +19,8 @@ public class ModCommands {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             ultrabeastsCommand(dispatcher);
         });
+
+        UltraBeasts.LOGGER.info("Registering Commands for " + UltraBeasts.MOD_ID);
     }
 
     private static void ultrabeastsCommand(CommandDispatcher<ServerCommandSource> dispatcher) {

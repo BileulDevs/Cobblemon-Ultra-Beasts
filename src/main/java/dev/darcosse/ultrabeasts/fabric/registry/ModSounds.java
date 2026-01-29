@@ -7,20 +7,28 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 
 public class ModSounds {
-    public static final Identifier PORTAL_SPAWN_ID = Identifier.of(UltraBeasts.MOD_ID, "portal_spawn");
-    public static final SoundEvent PORTAL_SPAWN = SoundEvent.of(PORTAL_SPAWN_ID);
+    public static final Identifier WORMHOLE_SPAWN_ID = Identifier.of(UltraBeasts.MOD_ID, "wormhole_spawn");
+    public static final Identifier WORMHOLE_ANIMATION_SPAWN_ID = Identifier.of(UltraBeasts.MOD_ID, "wormhole_animation_spawn");
+    public static final Identifier WORMHOLE_AMBIENT_ID = Identifier.of(UltraBeasts.MOD_ID, "wormhole_ambient");
 
-    public static final Identifier PORTAL_AMBIENT_ID = Identifier.of(UltraBeasts.MOD_ID, "portal_ambient");
-    public static final SoundEvent PORTAL_AMBIENT = SoundEvent.of(PORTAL_AMBIENT_ID);
-
-    public static final Identifier CORE_USED_ID = Identifier.of(UltraBeasts.MOD_ID, "core_used");
-    public static final SoundEvent CORE_USED = SoundEvent.of(CORE_USED_ID);
+    public static final SoundEvent WORMHOLE_SPAWN = SoundEvent.of(WORMHOLE_SPAWN_ID);
+    public static final SoundEvent WORMHOLE_ANIMATION_SPAWN = SoundEvent.of(WORMHOLE_ANIMATION_SPAWN_ID);
+    public static final SoundEvent WORMHOLE_AMBIENT = SoundEvent.of(WORMHOLE_AMBIENT_ID);
 
     public static void initialize() {
-        Registry.register(Registries.SOUND_EVENT, PORTAL_SPAWN_ID, PORTAL_SPAWN);
-        Registry.register(Registries.SOUND_EVENT, PORTAL_AMBIENT_ID, PORTAL_AMBIENT);
-        Registry.register(Registries.SOUND_EVENT, CORE_USED_ID, CORE_USED);
+        Registry.register(Registries.SOUND_EVENT,
+                WORMHOLE_SPAWN_ID,
+                WORMHOLE_SPAWN
+        );
+        Registry.register(Registries.SOUND_EVENT,
+                WORMHOLE_ANIMATION_SPAWN_ID,
+                WORMHOLE_ANIMATION_SPAWN
+        );
+        Registry.register(Registries.SOUND_EVENT,
+                WORMHOLE_AMBIENT_ID,
+                WORMHOLE_AMBIENT
+        );
 
-        UltraBeasts.LOGGER.info("Registering Sound Events");
+        UltraBeasts.LOGGER.info("Registering Sound Events for " + UltraBeasts.MOD_ID);
     }
 }

@@ -64,12 +64,11 @@ public class VoidFallHandler {
                 50, 1, 1, 1, 0.1
         );
 
-        handleChimeraVoidFall(player);
+        handleUltraBeastVoidFall(player);
     }
 
-    private static void handleChimeraVoidFall(ServerPlayerEntity player) {
+    public static void handleUltraBeastVoidFall(ServerPlayerEntity player) {
         WormholeEntity.killAllPokemonsOfWorld((ServerWorld) player.getWorld());
-        WormholeEntity.checkAndPlaceChimerasCore((ServerWorld) player.getWorld());
         teleportBackToOverworld(player);
     }
 

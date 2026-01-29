@@ -27,9 +27,9 @@ public class ModEvents {
 
         ServerTickEvents.END_SERVER_TICK.register(ModEvents::onServerTick);
         ServerLifecycleEvents.SERVER_STOPPING.register(ModEvents::onServerStopping);
-        ServerLifecycleEvents.SERVER_STARTING.register(ModEvents::onServerStart);
+        ServerLifecycleEvents.SERVER_STARTED.register(ModEvents::onServerStart);
 
-        UltraBeasts.LOGGER.info("Registered Ultra-Beasts events");
+        UltraBeasts.LOGGER.info("Registering Events for " + UltraBeasts.MOD_ID);
     }
 
     private static void onServerTick(MinecraftServer server) {
@@ -59,6 +59,8 @@ public class ModEvents {
             world.getEntitiesByType(ModEntities.WORMHOLE_ANIMATION, e -> true)
                     .forEach(Entity::discard);
         }
+
+        WormholeEntity.clearWormhole();
 
         UltraBeasts.LOGGER.info("Cleaning up Ultra-Beasts entities finished!");
     }
