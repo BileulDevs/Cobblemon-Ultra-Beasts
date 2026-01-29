@@ -79,8 +79,7 @@ public class VoidFallHandler {
 
         UltraSpaceStructureManager.removeStructure((ServerWorld) player.getWorld());
 
-        player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 100, 254, false, false, true));
-        player.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 140, 254, false, false, true));
+        player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 254, false, false, true));
         player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 100, 254, false, false, true));
 
         player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.5f, 1.0f);
@@ -88,6 +87,15 @@ public class VoidFallHandler {
         overworldWorld.getServer().execute(() -> {
             if (savedPos != null) {
                 player.teleport(overworldWorld, savedPos.getX() + 0.5, savedPos.getY(), savedPos.getZ() + 0.5, 0, 0);
+
+                overworldWorld.playSound(
+                        null,
+                        savedPos.getX(), savedPos.getY(), savedPos.getZ(),
+                        SoundEvents.ENTITY_ENDERMAN_SCREAM,
+                        SoundCategory.HOSTILE,
+                        2.0f,
+                        1.0f
+                );
 
                 overworldWorld.spawnParticles(ParticleTypes.PORTAL,
                         player.getX(), player.getY() + 1, player.getZ(),

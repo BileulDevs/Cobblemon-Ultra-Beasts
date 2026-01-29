@@ -26,10 +26,9 @@ public class UltraBeasts implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        // Charger la config
         ConfigManager.loadConfig();
 
-        // Initialisations
+        ModParticles.register();
         ModBlocks.registerBlocks();
         ModItems.registerItems();
         ModGenerators.initialize();
@@ -41,10 +40,8 @@ public class UltraBeasts implements ModInitializer {
         UnbreakableBlocksHandler.initialize();
         EventsHandler.initializeEvents();
 
-        // Tick serveur
         ServerTickEvents.END_SERVER_TICK.register(this::onServerTick);
 
-        // Nettoyage à l'arrêt
         ServerLifecycleEvents.SERVER_STOPPING.register(this::onServerStopping);
 
         LOGGER.info("Ultra-Beasts mod initialized!");
@@ -62,6 +59,15 @@ public class UltraBeasts implements ModInitializer {
 
     private void onServerStopping(MinecraftServer server) {
         LOGGER.info("Server stopping, cleaning up entities...");
+        for (ServerWorld world : server.getWorlds()) {
+            world.getEntitiesByType(net.minecraft.entity.EntityType.BLOCK_DISPLAY, e -> true)
+                    .forEach(entity -> entity.discard());
+        }
+        LOGGER.info("Cleanup complete.");
+    }
+
+    private void onServerStart(MinecraftServer server) {
+        LOGGER.info("Server starting, cleaning up entities...");
         for (ServerWorld world : server.getWorlds()) {
             world.getEntitiesByType(net.minecraft.entity.EntityType.BLOCK_DISPLAY, e -> true)
                     .forEach(entity -> entity.discard());

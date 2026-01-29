@@ -4,10 +4,7 @@ import com.cobblemon.mod.common.CobblemonEntities;
 import dev.darcosse.ultrabeasts.fabric.UltraBeasts;
 import dev.darcosse.ultrabeasts.fabric.config.ConfigManager;
 import dev.darcosse.ultrabeasts.fabric.dimension.UltraSpaceStructureManager;
-import dev.darcosse.ultrabeasts.fabric.registry.ModBlocks;
-import dev.darcosse.ultrabeasts.fabric.registry.ModDimensions;
-import dev.darcosse.ultrabeasts.fabric.registry.ModEntities;
-import dev.darcosse.ultrabeasts.fabric.registry.ModSounds;
+import dev.darcosse.ultrabeasts.fabric.registry.*;
 import net.minecraft.advancement.AdvancementEntry;
 import net.minecraft.advancement.AdvancementProgress;
 import net.minecraft.block.Blocks;
@@ -93,11 +90,7 @@ public class WormholeEntity extends Entity {
                 ambientSoundTimer = 0;
             }
 
-            particleTimer++;
-            if (particleTimer >= PARTICLE_INTERVAL) {
-                spawnParticles();
-                particleTimer = 0;
-            }
+            summonPortal();
         }
     }
 
@@ -233,8 +226,34 @@ public class WormholeEntity extends Entity {
         isSpawning = false;
     }
 
-    private void spawnParticles() {
+    private void summonPortal() {
+        if (!(this.getWorld() instanceof ServerWorld world)) return;
 
+        int numberOfParticles = 50;
+
+        double radius = 2;
+
+        double centerX = this.getX();
+        double centerY = this.getY();
+        double centerZ = this.getZ();
+
+        for (int i = 0; i < numberOfParticles; i++) {
+            double angle = world.random.nextDouble() * 2 * Math.PI;
+
+            double startX = centerX + Math.cos(angle) * radius;
+            double startY = centerY + Math.sin(angle) * radius;
+            double startZ = centerZ;
+
+            world.spawnParticles(
+                    ModParticles.WORMHOLE,
+                    startX, startY, startZ,
+                    0,
+                    centerX,
+                    centerY,
+                    centerZ,
+                    0.0
+            );
+        }
     }
 
     /**
@@ -299,22 +318,21 @@ public class WormholeEntity extends Entity {
     }
 
     private void teleportToChimerasDimension(ServerPlayerEntity player) {
-        ServerWorld chimerasWorld = player.getServer().getWorld(ModDimensions.ULTRA_SPACE_DIMENSION);
-        if (chimerasWorld != null) {
+        ServerWorld ultraSpace = player.getServer().getWorld(ModDimensions.ULTRA_SPACE_DIMENSION);
+        if (ultraSpace != null) {
             if (player.getWorld().getRegistryKey().equals(World.OVERWORLD)) {
                 savedPositions.put(player.getUuid(), player.getBlockPos());
             }
 
-            checkAndPlaceChimerasCore(chimerasWorld);
-            killAllPokemonsOfWorld(chimerasWorld);
+            checkAndPlaceChimerasCore(ultraSpace);
+            killAllPokemonsOfWorld(ultraSpace);
             grantChimerasAdvancement(player);
 
-            UltraSpaceStructureManager.placeStructure(chimerasWorld);
+            UltraSpaceStructureManager.placeStructure(ultraSpace);
 
-            player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 100, 254, false, false, true));
-            player.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 200, 254, false, false, true));
+            player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 254, false, false, true));
 
-            player.teleport(chimerasWorld, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
+            player.teleport(ultraSpace, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
 
             MinecraftServer server = player.getServer();
             new Thread(() -> {
@@ -324,7 +342,7 @@ public class WormholeEntity extends Entity {
                         if (player.isAlive() && !player.isRemoved()) {
                             BlockPos playerPos = player.getBlockPos();
 
-                            chimerasWorld.playSound(
+                            ultraSpace.playSound(
                                     null,
                                     playerPos,
                                     SoundEvents.ENTITY_ENDERMAN_SCREAM,
@@ -333,7 +351,7 @@ public class WormholeEntity extends Entity {
                                     1.0f
                             );
 
-                            chimerasWorld.playSound(
+                            ultraSpace.playSound(
                                     null,
                                     playerPos,
                                     SoundEvents.ENTITY_WARDEN_HEARTBEAT,
@@ -392,9 +410,9 @@ public class WormholeEntity extends Entity {
         }
     }
 
-    public static void killAllPokemonsOfWorld(ServerWorld chimerasWorld) {
-        if (chimerasWorld != null) {
-            chimerasWorld.getEntitiesByType(CobblemonEntities.POKEMON, pokemonEntity -> {
+    public static void killAllPokemonsOfWorld(ServerWorld ultraSpace) {
+        if (ultraSpace != null) {
+            ultraSpace.getEntitiesByType(CobblemonEntities.POKEMON, pokemonEntity -> {
                 pokemonEntity.discard();
                 return false;
             });
