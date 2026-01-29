@@ -66,13 +66,11 @@ public class WormholeParticle extends SpriteBillboardParticle {
 
         float progress = (float) this.age / this.maxAge;
 
-        // 1. Mouvement
         this.z = startZ + (destZ - startZ) * progress;
         double curve = Math.pow(1.0 - progress, 3);
         this.x = destX + (initialDistanceX * curve);
         this.y = destY + (initialDistanceY * curve);
 
-        // 2. COULEURS AQUARELLE / PASTEL
         if (progress < 0.08f) {
             // 0-8% : Rose Pastel pur
             this.red = 1.0f;
@@ -93,18 +91,16 @@ public class WormholeParticle extends SpriteBillboardParticle {
         } else {
             // 22-100% : Transition Bleu -> Blanc, puis Blanc pur
             float local = (progress - 0.22f) / (1.0f - 0.22f);
-            // On atteint le blanc très vite dans ce dernier segment
+
             this.red = lerp(Math.min(local * 2.0f, 1.0f), 0.6f, 1.0f);
             this.green = lerp(Math.min(local * 2.0f, 1.0f), 0.85f, 1.0f);
             this.blue = 1.0f;
         }
 
-        // 3. Rendu
         this.alpha = (float) Math.sin(Math.PI * progress);
         this.scale = 0.4f * (1.1f - progress);
     }
 
-    // N'oublie pas d'ajouter cette méthode utilitaire si elle n'y est pas déjà
     private float lerp(float delta, float start, float end) {
         return start + delta * (end - start);
     }

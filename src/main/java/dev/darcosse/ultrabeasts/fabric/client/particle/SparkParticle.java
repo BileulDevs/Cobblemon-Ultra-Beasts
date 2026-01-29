@@ -6,8 +6,6 @@ import net.minecraft.client.particle.SpriteProvider;
 import net.minecraft.client.world.ClientWorld;
 
 public class SparkParticle extends SpriteBillboardParticle {
-
-    // On déclare notre propre variable de vitesse
     private final float angularVelocity;
 
     public SparkParticle(ClientWorld world, double x, double y, double z,
@@ -18,7 +16,6 @@ public class SparkParticle extends SpriteBillboardParticle {
         this.scale = 0.5f;
         this.setSprite(spriteProvider);
 
-        // Initialisation de l'angle et de la vitesse de rotation personnalisée
         this.angle = (float) (world.random.nextDouble() * Math.PI * 2);
         this.prevAngle = this.angle;
         this.angularVelocity = (float) (world.random.nextDouble() - 0.5) * 0.1f;
@@ -26,10 +23,9 @@ public class SparkParticle extends SpriteBillboardParticle {
 
     @Override
     public void tick() {
-        this.prevAngle = this.angle; // Stocke l'angle précédent pour l'interpolation
-        super.tick(); // Gère le mouvement et la durée de vie
+        this.prevAngle = this.angle;
+        super.tick();
 
-        // Mise à jour manuelle de l'angle puisque le champ natif est introuvable
         this.angle += this.angularVelocity;
     }
 

@@ -38,11 +38,8 @@ public class WormholeEntity extends Entity {
     private static long wormholePlacementTime = 0;
 
     private static final int LIFESPAN_TICKS = 1200;
-    private static final int PARTICLE_INTERVAL = 20;
 
     public static final Map<UUID, BlockPos> savedPositions = new HashMap<>();
-
-    private int particleTimer = 0;
 
     private static boolean isSpawning = false;
 
@@ -71,7 +68,6 @@ public class WormholeEntity extends Entity {
             long elapsed = currentTime - wormholePlacementTime;
 
             if (elapsed >= LIFESPAN_TICKS) {
-                removeLightBlock();
                 this.discard();
                 clearActiveWormhole();
                 return;
@@ -120,10 +116,17 @@ public class WormholeEntity extends Entity {
      * Vérifie s'il y a un trou de ver actif dans le monde
      */
     public static boolean hasActiveWormhole(ServerWorld world) {
-        if (isSpawning) {
+        if (isSpawning) return true;
+
+        if (activeWormhole != null && !activeWormhole.isRemoved()) return true;
+
+        var entities = world.getEntitiesByType(ModEntities.WORMHOLE, entity -> !entity.isRemoved());
+        if (!entities.isEmpty()) {
+            activeWormhole = entities.get(0);
             return true;
         }
-        return activeWormhole != null && !activeWormhole.isRemoved() && activeWormhole.getWorld() == world;
+
+        return false;
     }
 
     /**
@@ -182,6 +185,8 @@ public class WormholeEntity extends Entity {
      * Fait spawner le trou de ver à la position donnée
      */
     private static void spawnWormhole(ServerWorld world, BlockPos pos) {
+        world.getEntitiesByType(ModEntities.WORMHOLE, e -> true).forEach(Entity::discard);
+
         isSpawning = true;
 
         WormholeSpawnAnimation animationEntity = new WormholeSpawnAnimation(
@@ -256,30 +261,6 @@ public class WormholeEntity extends Entity {
         }
     }
 
-    /**
-     * Place un bloc de lumière à la position du portail
-     */
-    public void placeLightBlock() {
-        if (!this.getWorld().isClient && this.getWorld() instanceof ServerWorld world) {
-            lightBlockPos = this.getBlockPos();
-            if (world.getBlockState(lightBlockPos).isAir()) {
-                world.setBlockState(lightBlockPos, Blocks.LIGHT.getDefaultState());
-            }
-        }
-    }
-
-    /**
-     * Supprime le bloc de lumière
-     */
-    private void removeLightBlock() {
-        if (lightBlockPos != null && !this.getWorld().isClient && this.getWorld() instanceof ServerWorld world) {
-            if (world.getBlockState(lightBlockPos).isOf(Blocks.LIGHT)) {
-                world.setBlockState(lightBlockPos, Blocks.AIR.getDefaultState());
-            }
-            lightBlockPos = null;
-        }
-    }
-
     @Override
     public ActionResult interact(PlayerEntity player, Hand hand) {
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity serverPlayer) {
@@ -287,7 +268,6 @@ public class WormholeEntity extends Entity {
 
             this.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
 
-            removeLightBlock();
             this.discard();
             clearActiveWormhole();
 
@@ -310,7 +290,6 @@ public class WormholeEntity extends Entity {
 
             teleportToChimerasDimension(serverPlayer);
 
-            removeLightBlock();
             this.discard();
             clearActiveWormhole();
         }
@@ -377,10 +356,6 @@ public class WormholeEntity extends Entity {
         activeWormhole = wormhole;
         wormholePlacementTime = placementTime;
         isSpawning = false;
-
-        if (wormhole != null) {
-            wormhole.placeLightBlock();
-        }
     }
 
     /**
@@ -461,7 +436,6 @@ public class WormholeEntity extends Entity {
 
     @Override
     public void remove(RemovalReason reason) {
-        removeLightBlock();
         super.remove(reason);
         if (this == activeWormhole) {
             activeWormhole = null;

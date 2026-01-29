@@ -5,8 +5,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.decoration.DisplayEntity.BlockDisplayEntity;
 import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.decoration.DisplayEntity.BlockDisplayEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
@@ -20,19 +20,15 @@ import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class WormholeSpawnAnimation extends Entity {
-
     private static final int DESCENT_DURATION = 60;
     private static final int BLOCK_COLLECTION_DURATION = 40;
     private static final int ABSORPTION_DURATION = 100;
-    private static final int TOTAL_DURATION =
-            DESCENT_DURATION + BLOCK_COLLECTION_DURATION + ABSORPTION_DURATION;
+    private static final int TOTAL_DURATION = DESCENT_DURATION + BLOCK_COLLECTION_DURATION + ABSORPTION_DURATION;
 
     private static final int MAX_FLYING_BLOCKS = 200;
-
-    private final Random random = new Random();
+    public static final String BLOCK_TAG = "wormhole_animation_block";
 
     private int animationTick = 0;
     private BlockPos targetPos = BlockPos.ORIGIN;
@@ -52,15 +48,11 @@ public class WormholeSpawnAnimation extends Entity {
         this.targetPos = pos;
     }
 
-    public void setTargetPos(BlockPos pos) {
-        this.targetPos = pos;
-    }
-
     @Override
     public void tick() {
         super.tick();
 
-        if (getWorld().isClient) return;
+        if (this.getWorld().isClient) return;
 
         animationTick++;
 
@@ -70,13 +62,7 @@ public class WormholeSpawnAnimation extends Entity {
             if (!blocksSpawned) {
                 spawnFlyingBlocks();
                 blocksSpawned = true;
-
-                getWorld().playSound(
-                        null, targetPos,
-                        SoundEvents.ENTITY_WITHER_SPAWN,
-                        SoundCategory.HOSTILE,
-                        2.0f, 0.4f
-                );
+                this.getWorld().playSound(null, targetPos, SoundEvents.ENTITY_WITHER_SPAWN, SoundCategory.HOSTILE, 2.0f, 0.4f);
             }
             animateFlyingBlocks();
         } else if (animationTick <= TOTAL_DURATION) {
@@ -87,48 +73,25 @@ public class WormholeSpawnAnimation extends Entity {
         }
     }
 
-    // ================= DESCENTE =================
-
     private void handleDescent() {
         double progress = (double) animationTick / DESCENT_DURATION;
         double startY = targetPos.getY() + 20;
         double y = startY - progress * 20;
 
-        setPosition(targetPos.getX() + 0.5, y, targetPos.getZ() + 0.5);
+        this.setPosition(targetPos.getX() + 0.5, y, targetPos.getZ() + 0.5);
 
-        if (getWorld() instanceof ServerWorld sw) {
-            // Particules de portail principales
-            sw.spawnParticles(
-                    ParticleTypes.PORTAL,
-                    getX(), getY(), getZ(),
-                    120,  // Beaucoup plus de particules
-                    3.0,  // Zone plus large
-                    3.0,
-                    3.0,
-                    0.8   // Plus de vitesse
-            );
-
-            // Ajouter des particules END_ROD pour un effet lumineux
+        if (this.getWorld() instanceof ServerWorld sw) {
+            sw.spawnParticles(ParticleTypes.PORTAL, this.getX(), this.getY(), this.getZ(), 80, 2.0, 2.0, 2.0, 0.5);
             if (animationTick % 3 == 0) {
-                sw.spawnParticles(
-                        ParticleTypes.END_ROD,
-                        getX(), getY(), getZ(),
-                        20,
-                        2.0,
-                        2.0,
-                        2.0,
-                        0.1
-                );
+                sw.spawnParticles(ParticleTypes.END_ROD, this.getX(), this.getY(), this.getZ(), 10, 1.0, 1.0, 1.0, 0.1);
             }
         }
     }
 
-    // ================= BLOCS VISUELS =================
-
     private void spawnFlyingBlocks() {
-        if (!(getWorld() instanceof ServerWorld sw)) return;
+        if (!(this.getWorld() instanceof ServerWorld sw)) return;
 
-        List<BlockState> blocks = List.of(
+        List<BlockState> states = List.of(
                 Blocks.STONE.getDefaultState(),
                 Blocks.DIRT.getDefaultState(),
                 Blocks.GRASS_BLOCK.getDefaultState(),
@@ -137,44 +100,42 @@ public class WormholeSpawnAnimation extends Entity {
         );
 
         for (int i = 0; i < MAX_FLYING_BLOCKS; i++) {
+            double angle = this.random.nextDouble() * Math.PI * 2;
+            double radius = 15 + this.random.nextDouble() * 20;
+            double height = this.random.nextDouble() * 8 - 4;
 
-            double angle = random.nextDouble() * Math.PI * 2;
-            double radius = 15 + random.nextDouble() * 20;
-            double height = random.nextDouble() * 8 - 4;
+            BlockDisplayEntity display = new BlockDisplayEntity(EntityType.BLOCK_DISPLAY, sw);
+            display.addCommandTag(BLOCK_TAG);
 
-            double x = targetPos.getX() + 0.5 + Math.cos(angle) * radius;
-            double y = targetPos.getY() + 1.5 + height;
-            double z = targetPos.getZ() + 0.5 + Math.sin(angle) * radius;
-
-            BlockDisplayEntity display = new BlockDisplayEntity(
-                    EntityType.BLOCK_DISPLAY, sw
+            display.setBlockState(states.get(this.random.nextInt(states.size())));
+            display.setPosition(
+                    targetPos.getX() + 0.5 + Math.cos(angle) * radius,
+                    targetPos.getY() + 1.5 + height,
+                    targetPos.getZ() + 0.5 + Math.sin(angle) * radius
             );
 
-            display.setBlockState(blocks.get(random.nextInt(blocks.size())));
-            display.setPosition(x, y, z);
             display.setNoGravity(true);
             display.setInvulnerable(true);
 
-            float scale = 0.6f + random.nextFloat() * 0.4f;
-            display.setTransformation(new AffineTransformation(
-                    new Vector3f(),
-                    null,
-                    new Vector3f(scale, scale, scale),
-                    null
-            ));
+            float s = 0.5f + this.random.nextFloat() * 0.5f;
+            display.setTransformation(new AffineTransformation(null, null, new Vector3f(s, s, s), null));
 
             sw.spawnEntity(display);
             flyingBlocks.add(display);
         }
     }
 
-    // ================= ANIMATION =================
-
     private void animateFlyingBlocks() {
-        Vec3d center = getPos();
-
+        Vec3d center = this.getPos();
         int absorbTick = animationTick - DESCENT_DURATION - BLOCK_COLLECTION_DURATION;
         double progress = Math.max(0, (double) absorbTick / ABSORPTION_DURATION);
+
+        if (flyingBlocks.isEmpty() && this.getWorld() instanceof ServerWorld sw) {
+            sw.getEntitiesByType(EntityType.BLOCK_DISPLAY, e -> e.getCommandTags().contains(BLOCK_TAG))
+                    .forEach(flyingBlocks::add);
+        }
+
+        float rotationAngle = (float) (animationTick * 0.2f);
 
         for (BlockDisplayEntity block : flyingBlocks) {
             if (block.isRemoved()) continue;
@@ -185,79 +146,79 @@ public class WormholeSpawnAnimation extends Entity {
 
             Vec3d radial = toCenter.normalize();
             Vec3d tangent = radial.crossProduct(new Vec3d(0, 1, 0)).normalize();
-
             double pull = 0.08 + progress * 0.45;
-
-            Vec3d newPos = pos
-                    .add(tangent.multiply(0.35))
-                    .add(radial.multiply(pull * (20.0 / dist)));
-
+            Vec3d newPos = pos.add(tangent.multiply(0.35)).add(radial.multiply(pull * (15.0 / dist)));
             block.setPosition(newPos.x, newPos.y, newPos.z);
+
+            org.joml.Quaternionf quaternion = new org.joml.Quaternionf()
+                    .rotateX(rotationAngle * 0.5f)
+                    .rotateY(rotationAngle)
+                    .rotateZ(rotationAngle * 0.3f);
+
+            block.setInterpolationDuration(1);
+
+            Vector3f currentScale = new Vector3f(0.7f, 0.7f, 0.7f);
+
+            block.setTransformation(new AffineTransformation(
+                    null,
+                    quaternion,
+                    currentScale,
+                    null
+            ));
         }
 
-        if (getWorld() instanceof ServerWorld sw && animationTick % 2 == 0) {
-            sw.spawnParticles(
-                    ParticleTypes.REVERSE_PORTAL,
-                    center.x, center.y, center.z,
-                    (int) (40 * (1 + progress)),
-                    0.4, 0.4, 0.4,
-                    0.6
-            );
+        if (this.getWorld() instanceof ServerWorld sw && animationTick % 2 == 0) {
+            sw.spawnParticles(ParticleTypes.REVERSE_PORTAL, center.x, center.y, center.z, (int) (30 * (1 + progress)), 0.3, 0.3, 0.3, 0.5);
         }
     }
 
-    // ================= CLEANUP =================
-
     private void cleanupBlocks() {
-        if (!(getWorld() instanceof ServerWorld sw)) return;
+        if (!(this.getWorld() instanceof ServerWorld sw)) return;
 
         for (BlockDisplayEntity block : flyingBlocks) {
-            if (!block.isRemoved()) {
-                sw.spawnParticles(
-                        ParticleTypes.POOF,
-                        block.getX(), block.getY(), block.getZ(),
-                        8, 0.2, 0.2, 0.2, 0.05
-                );
+            if (block.isAlive()) {
+                sw.spawnParticles(ParticleTypes.POOF, block.getX(), block.getY(), block.getZ(), 5, 0.1, 0.1, 0.1, 0.05);
                 block.discard();
             }
         }
         flyingBlocks.clear();
-    }
 
-    // ================= FINAL =================
+        sw.getEntitiesByType(EntityType.BLOCK_DISPLAY, e -> e.getCommandTags().contains(BLOCK_TAG))
+                .forEach(Entity::discard);
+    }
 
     private void spawnFinalWormhole() {
         finalEntitySpawned = true;
-
-        WormholeEntity wormhole = new WormholeEntity(
-                ModEntities.WORMHOLE,
-                (ServerWorld) getWorld()
-        );
-        wormhole.setPosition(
-                targetPos.getX() + 0.5,
-                targetPos.getY(),
-                targetPos.getZ() + 0.5
-        );
-
-        getWorld().spawnEntity(wormhole);
-        WormholeEntity.setActiveWormhole(wormhole, getWorld().getTime());
-
-        getWorld().playSound(
-                null, targetPos,
-                SoundEvents.BLOCK_BEACON_ACTIVATE,
-                SoundCategory.HOSTILE,
-                3.0f, 0.8f
-        );
-
-        discard();
+        if (this.getWorld() instanceof ServerWorld sw) {
+            WormholeEntity wormhole = new WormholeEntity(ModEntities.WORMHOLE, sw);
+            wormhole.setPosition(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5);
+            sw.spawnEntity(wormhole);
+            WormholeEntity.setActiveWormhole(wormhole, sw.getTime());
+            sw.playSound(null, targetPos, SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.HOSTILE, 3.0f, 0.8f);
+        }
+        this.discard();
     }
 
     @Override
     protected void initDataTracker(DataTracker.Builder builder) {}
 
     @Override
-    protected void readCustomDataFromNbt(NbtCompound nbt) {}
+    protected void readCustomDataFromNbt(NbtCompound nbt) {
+        this.animationTick = nbt.getInt("AnimationTick");
+        this.blocksSpawned = nbt.getBoolean("BlocksSpawned");
+        this.finalEntitySpawned = nbt.getBoolean("FinalSpawned");
+        if (nbt.contains("TargetX")) {
+            this.targetPos = new BlockPos(nbt.getInt("TargetX"), nbt.getInt("TargetY"), nbt.getInt("TargetZ"));
+        }
+    }
 
     @Override
-    protected void writeCustomDataToNbt(NbtCompound nbt) {}
+    protected void writeCustomDataToNbt(NbtCompound nbt) {
+        nbt.putInt("AnimationTick", animationTick);
+        nbt.putBoolean("BlocksSpawned", blocksSpawned);
+        nbt.putBoolean("FinalSpawned", finalEntitySpawned);
+        nbt.putInt("TargetX", targetPos.getX());
+        nbt.putInt("TargetY", targetPos.getY());
+        nbt.putInt("TargetZ", targetPos.getZ());
+    }
 }
