@@ -276,7 +276,7 @@ public class WormholeEntity extends Entity {
     @Override
     public ActionResult interact(PlayerEntity player, Hand hand) {
         if (!this.getWorld().isClient && player instanceof ServerPlayerEntity serverPlayer) {
-            teleportToChimerasDimension(serverPlayer);
+            teleportToUltraSpaceDimension(serverPlayer);
 
             this.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
 
@@ -300,7 +300,7 @@ public class WormholeEntity extends Entity {
                     1.0f
             );
 
-            teleportToChimerasDimension(serverPlayer);
+            teleportToUltraSpaceDimension(serverPlayer);
 
             this.discard();
             clearActiveWormhole();
@@ -308,24 +308,42 @@ public class WormholeEntity extends Entity {
         super.onPlayerCollision(player);
     }
 
-    private void teleportToChimerasDimension(ServerPlayerEntity player) {
+    private void teleportToUltraSpaceDimension(ServerPlayerEntity player) {
+        if (player.getWorld().isClient()) {
+            return;
+        }
+
         ServerWorld ultraSpace = player.getServer().getWorld(ModDimensions.ULTRA_SPACE_DIMENSION);
+
         if (ultraSpace != null) {
             if (player.getWorld().getRegistryKey().equals(World.OVERWORLD)) {
                 savedPositions.put(player.getUuid(), player.getBlockPos());
             }
 
+            String structureKey = UltraSpaceStructureManager.getRandomStructureKey(player.getRandom());
+            UltraSpaceStructureManager.StructureConfig config = UltraSpaceStructureManager.getConfig(structureKey);
+
+            if (config == null) {
+                UltraBeasts.LOGGER.error("Impossible de trouver la config pour {}", structureKey);
+                return;
+            }
+
             killAllPokemonsOfWorld(ultraSpace);
             grantUltraBeastsAdvancement(player);
-
-            UltraSpaceStructureManager.placeStructure(ultraSpace);
+            UltraSpaceStructureManager.placeStructure(ultraSpace, structureKey);
 
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 254, false, false, true));
 
-            player.teleport(ultraSpace, 0.5, 83, -19.5, player.getYaw(), player.getPitch());
+            BlockPos pSpawn = config.playerSpawn();
+            player.teleport(ultraSpace, pSpawn.getX() + 0.5, pSpawn.getY(), pSpawn.getZ() + 0.5, player.getYaw(), player.getPitch());
 
+            BlockPos rSpawn = config.returnPortalSpawn();
             ReturnWormholeEntity returnPortal = new ReturnWormholeEntity(ModEntities.RETURN_WORMHOLE, ultraSpace);
-            returnPortal.setPosition(0.5, 83, -16.5);
+            returnPortal.setPosition(
+                    rSpawn.getX() + 0.5,
+                    rSpawn.getY() + 2.0,
+                    rSpawn.getZ() + 0.5
+            );
             ultraSpace.spawnEntity(returnPortal);
 
             MinecraftServer server = player.getServer();
@@ -336,23 +354,8 @@ public class WormholeEntity extends Entity {
                         if (player.isAlive() && !player.isRemoved()) {
                             BlockPos playerPos = player.getBlockPos();
 
-                            ultraSpace.playSound(
-                                    null,
-                                    playerPos,
-                                    SoundEvents.ENTITY_ENDERMAN_SCREAM,
-                                    SoundCategory.HOSTILE,
-                                    2.0f,
-                                    1.0f
-                            );
-
-                            ultraSpace.playSound(
-                                    null,
-                                    playerPos,
-                                    SoundEvents.ENTITY_WARDEN_HEARTBEAT,
-                                    SoundCategory.AMBIENT,
-                                    1.5f,
-                                    0.8f
-                            );
+                            ultraSpace.playSound(null, playerPos, SoundEvents.ENTITY_ENDERMAN_SCREAM, SoundCategory.HOSTILE, 2.0f, 1.0f);
+                            ultraSpace.playSound(null, playerPos, SoundEvents.ENTITY_WARDEN_HEARTBEAT, SoundCategory.AMBIENT, 1.5f, 0.8f);
 
                             player.sendMessage(Text.translatable("dimension.travel.ultra_space"), false);
                         }

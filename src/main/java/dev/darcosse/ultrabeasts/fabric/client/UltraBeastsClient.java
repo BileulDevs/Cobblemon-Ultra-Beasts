@@ -1,5 +1,6 @@
 package dev.darcosse.ultrabeasts.fabric.client;
 
+import dev.darcosse.ultrabeasts.fabric.client.particle.ReturnWormholeParticleFactory;
 import dev.darcosse.ultrabeasts.fabric.client.particle.SparkParticleFactory;
 import dev.darcosse.ultrabeasts.fabric.client.particle.WormholeParticleFactory;
 import dev.darcosse.ultrabeasts.fabric.registry.ModEntities;
@@ -19,6 +20,7 @@ public class UltraBeastsClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.WORMHOLE_ANIMATION, WormholeSpawnAnimationRenderer::new);
         EntityRendererRegistry.register(ModEntities.RETURN_WORMHOLE, ReturnWormholeRenderer::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.WORMHOLE, WormholeParticleFactory::new);
+        ParticleFactoryRegistry.getInstance().register(ModParticles.RETURN_WORMHOLE, ReturnWormholeParticleFactory::new);
         ParticleFactoryRegistry.getInstance().register(ModParticles.SPARK, SparkParticleFactory::new);
     }
 }
