@@ -43,7 +43,7 @@ public class ReturnWormholeEntity extends Entity {
 
         double centerX = this.getX();
         double centerY = this.getY();
-        double centerZ = this.getZ() + 1;
+        double centerZ = this.getZ() - 1;
 
         for (int i = 0; i < numberOfParticles; i++) {
             double angle = world.random.nextDouble() * 2 * Math.PI;
@@ -53,7 +53,7 @@ public class ReturnWormholeEntity extends Entity {
             double startZ = centerZ;
 
             world.spawnParticles(
-                    ModParticles.WORMHOLE,
+                    ModParticles.RETURN_WORMHOLE,
                     startX, startY, startZ,
                     0,
                     centerX,

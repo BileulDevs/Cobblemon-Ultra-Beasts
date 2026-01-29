@@ -10,6 +10,7 @@ import net.minecraft.util.Identifier;
 public class ModParticles {
 
     public static final SimpleParticleType WORMHOLE = FabricParticleTypes.simple();
+    public static final SimpleParticleType RETURN_WORMHOLE = FabricParticleTypes.simple();
     public static final SimpleParticleType SPARK = FabricParticleTypes.simple();
 
     public static void initialize() {
@@ -17,6 +18,12 @@ public class ModParticles {
                 Registries.PARTICLE_TYPE,
                 Identifier.of(UltraBeasts.MOD_ID, "wormhole"),
                 WORMHOLE
+        );
+
+        Registry.register(
+                Registries.PARTICLE_TYPE,
+                Identifier.of(UltraBeasts.MOD_ID, "return_wormhole"),
+                RETURN_WORMHOLE
         );
 
         Registry.register(
