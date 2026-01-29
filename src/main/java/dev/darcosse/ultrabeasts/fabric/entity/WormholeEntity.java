@@ -252,7 +252,7 @@ public class WormholeEntity extends Entity {
 
         double centerX = this.getX();
         double centerY = this.getY();
-        double centerZ = this.getZ();
+        double centerZ = this.getZ() + 1;
 
         for (int i = 0; i < numberOfParticles; i++) {
             double angle = world.random.nextDouble() * 2 * Math.PI;

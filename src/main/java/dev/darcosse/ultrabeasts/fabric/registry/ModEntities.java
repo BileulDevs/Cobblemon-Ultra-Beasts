@@ -16,7 +16,7 @@ public class ModEntities {
 
     public static final EntityType<WormholeEntity> WORMHOLE = FabricEntityTypeBuilder
             .create(SpawnGroup.MISC, WormholeEntity::new)
-            .dimensions(EntityDimensions.fixed(2.0f, 2.0f))
+            .dimensions(EntityDimensions.fixed(1.0f, 1.0f))
             .build();
 
     public static final EntityType<WormholeSpawnAnimation> WORMHOLE_ANIMATION = FabricEntityTypeBuilder

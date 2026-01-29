@@ -33,11 +33,11 @@ public class WormholeParticle extends SpriteBillboardParticle {
                 WormholeEntity portal = entities.getFirst();
                 this.destX = portal.getX();
                 this.destY = portal.getY();
-                this.destZ = portal.getZ() - 4.0;
+                this.destZ = portal.getZ() - 3.0;
             } else {
                 this.destX = x;
                 this.destY = y;
-                this.destZ = z - 4.0;
+                this.destZ = z - 3.0;
             }
         }
 
