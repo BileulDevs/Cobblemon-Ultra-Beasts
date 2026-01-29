@@ -16,7 +16,7 @@ public class ModSounds {
     public static final Identifier CORE_USED_ID = Identifier.of(UltraBeasts.MOD_ID, "core_used");
     public static final SoundEvent CORE_USED = SoundEvent.of(CORE_USED_ID);
 
-    public static void registerSounds() {
+    public static void initialize() {
         Registry.register(Registries.SOUND_EVENT, PORTAL_SPAWN_ID, PORTAL_SPAWN);
         Registry.register(Registries.SOUND_EVENT, PORTAL_AMBIENT_ID, PORTAL_AMBIENT);
         Registry.register(Registries.SOUND_EVENT, CORE_USED_ID, CORE_USED);

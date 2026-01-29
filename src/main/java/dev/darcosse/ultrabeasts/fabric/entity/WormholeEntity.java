@@ -91,6 +91,18 @@ public class WormholeEntity extends Entity {
     }
 
     /**
+     * Méthode statique pour forcer le spawn d'un trou de ver au joueur
+     */
+    public static void forceSpawnToPlayer(ServerWorld world, ServerPlayerEntity player) {
+        ModEvents.cleanUp(world.getServer());
+
+        BlockPos spawnPos = player.getBlockPos();
+        if (spawnPos != null) {
+            spawnWormhole(world, spawnPos);
+        }
+    }
+
+    /**
      * Méthode statique pour tenter de faire spawner un trou de ver aléatoirement
      */
     public static void tryRandomSpawn(ServerWorld world, Random random) {
@@ -122,7 +134,7 @@ public class WormholeEntity extends Entity {
 
         var entities = world.getEntitiesByType(ModEntities.WORMHOLE, entity -> !entity.isRemoved());
         if (!entities.isEmpty()) {
-            activeWormhole = entities.get(0);
+            activeWormhole = entities.getFirst();
             return true;
         }
 
@@ -216,7 +228,7 @@ public class WormholeEntity extends Entity {
 
         if (nearestPlayer != null) {
             nearestPlayer.sendMessage(
-                    Text.translatable("message.cobblemon_chimeras.portal_spawn"),
+                    Text.translatable("message.ultrabeasts.portal_spawn"),
                     false
             );
         }
@@ -305,7 +317,7 @@ public class WormholeEntity extends Entity {
 
             checkAndPlaceChimerasCore(ultraSpace);
             killAllPokemonsOfWorld(ultraSpace);
-            grantChimerasAdvancement(player);
+            grantUltraBeastsAdvancement(player);
 
             UltraSpaceStructureManager.placeStructure(ultraSpace);
 
@@ -339,7 +351,7 @@ public class WormholeEntity extends Entity {
                                     0.8f
                             );
 
-                            player.sendMessage(Text.translatable("dimension.travel.chimeras"), false);
+                            player.sendMessage(Text.translatable("dimension.travel.ultra_space"), false);
                         }
                     });
                 } catch (InterruptedException e) {
@@ -394,8 +406,8 @@ public class WormholeEntity extends Entity {
         }
     }
 
-    private void grantChimerasAdvancement(ServerPlayerEntity player) {
-        Identifier advancementId = Identifier.of(UltraBeasts.MOD_ID, "enter_chimeras_dimension");
+    private void grantUltraBeastsAdvancement(ServerPlayerEntity player) {
+        Identifier advancementId = Identifier.of(UltraBeasts.MOD_ID, "enter_ultra_space_dimension");
 
         AdvancementEntry advancement = player.getServer().getAdvancementLoader().get(advancementId);
 

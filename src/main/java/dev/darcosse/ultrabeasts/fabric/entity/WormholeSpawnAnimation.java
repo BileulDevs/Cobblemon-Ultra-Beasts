@@ -135,27 +135,36 @@ public class WormholeSpawnAnimation extends Entity {
                     .forEach(flyingBlocks::add);
         }
 
-        float rotationAngle = (float) (animationTick * 0.2f);
-
         for (BlockDisplayEntity block : flyingBlocks) {
             if (block.isRemoved()) continue;
 
             Vec3d pos = block.getPos();
             Vec3d toCenter = center.subtract(pos);
             double dist = Math.max(toCenter.length(), 0.5);
-
             Vec3d radial = toCenter.normalize();
             Vec3d tangent = radial.crossProduct(new Vec3d(0, 1, 0)).normalize();
             double pull = 0.08 + progress * 0.45;
             Vec3d newPos = pos.add(tangent.multiply(0.35)).add(radial.multiply(pull * (15.0 / dist)));
             block.setPosition(newPos.x, newPos.y, newPos.z);
 
+            long seed = block.getUuid().getMostSignificantBits();
+            float randomSpeedX = ((seed % 100) / 100f) * 0.5f + 0.5f;
+            float randomSpeedY = (((seed >> 8) % 100) / 100f) * 0.5f + 0.5f;
+            float randomSpeedZ = (((seed >> 16) % 100) / 100f) * 0.5f + 0.5f;
+
+            float direction = (seed % 2 == 0) ? 1.0f : -1.0f;
+
+            float rotX = animationTick * 0.15f * randomSpeedX * direction;
+            float rotY = animationTick * 0.20f * randomSpeedY * direction;
+            float rotZ = animationTick * 0.10f * randomSpeedZ * direction;
+
             org.joml.Quaternionf quaternion = new org.joml.Quaternionf()
-                    .rotateX(rotationAngle * 0.5f)
-                    .rotateY(rotationAngle)
-                    .rotateZ(rotationAngle * 0.3f);
+                    .rotateX(rotX)
+                    .rotateY(rotY)
+                    .rotateZ(rotZ);
 
             block.setInterpolationDuration(1);
+            block.setStartInterpolation(0);
 
             Vector3f currentScale = new Vector3f(0.7f, 0.7f, 0.7f);
 

@@ -5,7 +5,7 @@ import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import dev.darcosse.ultrabeasts.fabric.UltraBeasts;
 import dev.darcosse.ultrabeasts.fabric.config.ConfigManager;
 import dev.darcosse.ultrabeasts.fabric.entity.WormholeEntity;
-import dev.darcosse.ultrabeasts.fabric.handler.CaptureChimeraHandler;
+import dev.darcosse.ultrabeasts.fabric.handler.CaptureUltraBeastHandler;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.entity.Entity;
@@ -22,7 +22,7 @@ public class ModEvents {
 
     public static void initialize() {
         CobblemonEvents.POKEDEX_DATA_CHANGED_POST.subscribe(
-                Priority.HIGHEST, CaptureChimeraHandler.registerGrantChimerasAdvancements()
+                Priority.HIGHEST, CaptureUltraBeastHandler.registerGrantUltraBeastAdvancements()
         );
 
         ServerTickEvents.END_SERVER_TICK.register(ModEvents::onServerTick);
@@ -48,17 +48,19 @@ public class ModEvents {
         });
     }
 
-    private static void cleanUp(MinecraftServer server) {
-        UltraBeasts.LOGGER.info("Cleaning up Ultra-Beasts mod...");
+    public static void cleanUp(MinecraftServer server) {
+        UltraBeasts.LOGGER.info("Cleaning up Ultra-Beasts entities...");
 
         for (ServerWorld world : server.getWorlds()) {
             world.getEntitiesByType(EntityType.BLOCK_DISPLAY, entity -> entity.getCommandTags().contains("wormhole_animation_block"))
                     .forEach(Entity::discard);
             world.getEntitiesByType(ModEntities.WORMHOLE, e -> true)
                     .forEach(Entity::discard);
+            world.getEntitiesByType(ModEntities.WORMHOLE_ANIMATION, e -> true)
+                    .forEach(Entity::discard);
         }
 
-        UltraBeasts.LOGGER.info("Cleaning up Ultra-Beasts mod finished!");
+        UltraBeasts.LOGGER.info("Cleaning up Ultra-Beasts entities finished!");
     }
 
     private static void onServerStopping(MinecraftServer server) {

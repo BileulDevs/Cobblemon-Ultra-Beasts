@@ -11,8 +11,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
 
-public class CaptureChimeraHandler {
-    public static Function1<? super PokedexDataChangedEvent.Post, Unit> registerGrantChimerasAdvancements() {
+public class CaptureUltraBeastHandler {
+    public static Function1<? super PokedexDataChangedEvent.Post, Unit> registerGrantUltraBeastAdvancements() {
         return event -> {
             ServerPlayerEntity player = event.getDataSource().getPokemon().getOwnerPlayer();
 

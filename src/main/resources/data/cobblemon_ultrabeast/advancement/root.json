@@ -10,10 +10,10 @@
       }
     },
     "title": {
-      "translate": "advancement.cobblemon_chimeras.enter_chimeras_dimension.title"
+      "translate": "advancement.ultrabeasts.enter_ultra_space_dimension.title"
     },
     "description": {
-      "translate": "advancement.cobblemon_chimeras.enter_chimeras_dimension.description"
+      "translate": "advancement.ultrabeasts.enter_ultra_space_dimension.description"
     },
     "background": "minecraft:textures/block/obsidian.png",
     "frame": "task",

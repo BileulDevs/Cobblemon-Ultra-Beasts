@@ -1,6 +1,6 @@
 package dev.darcosse.ultrabeasts.fabric;
 
-import dev.darcosse.ultrabeasts.fabric.commands.UltraBeastsCommands;
+import dev.darcosse.ultrabeasts.fabric.registry.ModCommands;
 import dev.darcosse.ultrabeasts.fabric.config.ConfigManager;
 import dev.darcosse.ultrabeasts.fabric.handler.UnbreakableBlocksHandler;
 import dev.darcosse.ultrabeasts.fabric.handler.VoidFallHandler;
@@ -19,17 +19,17 @@ public class UltraBeasts implements ModInitializer {
     public void onInitialize() {
         ConfigManager.loadConfig();
 
-        ModParticles.register();
-        ModBlocks.registerBlocks();
-        ModItems.registerItems();
+        ModParticles.initialize();
+        ModBlocks.initialize();
+        ModItems.initialize();
         ModGenerators.initialize();
         ModEntities.initialize();
-        ModSounds.registerSounds();
+        ModSounds.initialize();
+        ModEvents.initialize();
+        ModCommands.initialize();
 
-        UltraBeastsCommands.registerCommands();
         VoidFallHandler.initialize();
         UnbreakableBlocksHandler.initialize();
-        ModEvents.initialize();
 
         LOGGER.info("Ultra-Beasts mod initialized!");
     }

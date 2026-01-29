@@ -18,10 +18,7 @@ import net.minecraft.world.explosion.Explosion;
 public class UnbreakableBlocksHandler {
     public static void initialize() {
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> {
-            if (world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) {
-                return false;
-            }
-            return true;
+            return !world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION);
         });
 
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {

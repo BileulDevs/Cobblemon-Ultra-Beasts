@@ -25,8 +25,16 @@ public class ModEntities {
             .build();
 
     public static void initialize() {
-        Registry.register(Registries.ENTITY_TYPE, Identifier.of(UltraBeasts.MOD_ID, "wormhole"), WORMHOLE);
-        Registry.register(Registries.ENTITY_TYPE, Identifier.of(UltraBeasts.MOD_ID, "wormhole_animation"), WORMHOLE_ANIMATION);
+        Registry.register(
+                Registries.ENTITY_TYPE,
+                Identifier.of(UltraBeasts.MOD_ID, "wormhole"),
+                WORMHOLE
+        );
+        Registry.register(
+                Registries.ENTITY_TYPE,
+                Identifier.of(UltraBeasts.MOD_ID, "wormhole_animation"),
+                WORMHOLE_ANIMATION
+        );
 
         UltraBeasts.LOGGER.info("Entities registered!");
     }

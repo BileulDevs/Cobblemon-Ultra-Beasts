@@ -30,7 +30,7 @@ public class WormholeParticle extends SpriteBillboardParticle {
             java.util.List<WormholeEntity> entities = world.getEntitiesByClass(WormholeEntity.class, searchBox, entity -> true);
 
             if (!entities.isEmpty()) {
-                WormholeEntity portal = entities.get(0);
+                WormholeEntity portal = entities.getFirst();
                 this.destX = portal.getX();
                 this.destY = portal.getY();
                 this.destZ = portal.getZ() - 4.0;
@@ -108,5 +108,10 @@ public class WormholeParticle extends SpriteBillboardParticle {
     @Override
     public ParticleTextureSheet getType() {
         return ParticleTextureSheet.PARTICLE_SHEET_OPAQUE;
+    }
+
+    @Override
+    public int getBrightness(float tint) {
+        return 15728880;
     }
 }

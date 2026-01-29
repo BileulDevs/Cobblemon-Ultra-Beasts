@@ -22,7 +22,7 @@ public class ModBlocks {
                     .luminance(15)
     );
 
-    public static void registerBlocks() {
+    public static void initialize() {
         Registry.register(Registries.BLOCK, Identifier.of(UltraBeasts.MOD_ID, "chimeras_core"), CHIMERAS_CORE_BLOCK);
 
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS)

@@ -8,7 +8,7 @@ import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
 public class ModItems {
-    public static void registerItems() {
+    public static void initialize() {
         Registry.register(
                 Registries.ITEM,
                 Identifier.of(UltraBeasts.MOD_ID, "chimeras_core"),
