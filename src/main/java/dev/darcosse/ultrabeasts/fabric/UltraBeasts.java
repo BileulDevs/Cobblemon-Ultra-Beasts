@@ -65,4 +65,13 @@ public class UltraBeasts implements ModInitializer {
         }
         LOGGER.info("Cleanup complete.");
     }
+
+    private void onServerStart(MinecraftServer server) {
+        LOGGER.info("Server starting, cleaning up entities...");
+        for (ServerWorld world : server.getWorlds()) {
+            world.getEntitiesByType(net.minecraft.entity.EntityType.BLOCK_DISPLAY, e -> true)
+                    .forEach(entity -> entity.discard());
+        }
+        LOGGER.info("Cleanup complete.");
+    }
 }

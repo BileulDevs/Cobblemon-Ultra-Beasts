@@ -19,38 +19,36 @@ public class WormholeParticle extends SpriteBillboardParticle {
 
         this.startX = x;
         this.startY = y;
-        this.startZ = z;
+        this.startZ = z + (world.random.nextDouble() * 0.5 - 0.25);
 
-        // 1. On tente d'utiliser les data du serveur (si elles ne sont pas à 0)
         if (Math.abs(vX) > 0.0001 || Math.abs(vY) > 0.0001) {
             this.destX = vX;
             this.destY = vY;
             this.destZ = vZ;
-        }
-        // 2. Sinon, on cherche l'entité WormholeEntity la plus proche
-        else {
-            // On utilise getEntitiesByClass pour plus de flexibilité avec les types non-Living
+        } else {
             Box searchBox = new Box(x - 5, y - 5, z - 5, x + 5, y + 5, z + 5);
             java.util.List<WormholeEntity> entities = world.getEntitiesByClass(WormholeEntity.class, searchBox, entity -> true);
 
             if (!entities.isEmpty()) {
-                // On prend la première trouvée (la plus proche en général)
                 WormholeEntity portal = entities.get(0);
                 this.destX = portal.getX();
                 this.destY = portal.getY();
-                this.destZ = portal.getZ() - 2.0;
+                this.destZ = portal.getZ() - 4.0;
             } else {
-                // Secours ultime
                 this.destX = x;
                 this.destY = y;
-                this.destZ = z - 2.0;
+                this.destZ = z - 4.0;
             }
         }
+
+        this.red = 1.0f;
+        this.green = 0.8f;
+        this.blue = 0.9f;
 
         this.initialDistanceX = x - destX;
         this.initialDistanceY = y - destY;
 
-        this.maxAge = 35;
+        this.maxAge = 25 + world.random.nextInt(20);
         this.setSprite(sprite);
         this.gravityStrength = 0.0f;
     }
@@ -66,26 +64,53 @@ public class WormholeParticle extends SpriteBillboardParticle {
             return;
         }
 
-        // Progression de 0.0 à 1.0
         float progress = (float) this.age / this.maxAge;
 
-        // 1. Recul linéaire de 2 blocs sur l'axe Z
+        // 1. Mouvement
         this.z = startZ + (destZ - startZ) * progress;
-
-        // 2. Convergence courbe (L'effet entonnoir de ton dessin)
-        // Math.pow(..., 3) rend la courbe très prononcée
         double curve = Math.pow(1.0 - progress, 3);
-
         this.x = destX + (initialDistanceX * curve);
         this.y = destY + (initialDistanceY * curve);
 
-        // 3. Opacité pour la fluidité
-        // Apparition en fondu au début, disparition à la fin
+        // 2. COULEURS AQUARELLE / PASTEL
+        if (progress < 0.08f) {
+            // 0-8% : Rose Pastel pur
+            this.red = 1.0f;
+            this.green = 0.8f;
+            this.blue = 0.9f;
+        } else if (progress < 0.15f) {
+            // 8-15% : Transition Rose -> Violet Lilas (Très rapide)
+            float local = (progress - 0.08f) / (0.15f - 0.08f);
+            this.red = lerp(local, 1.0f, 0.8f);
+            this.green = lerp(local, 0.8f, 0.7f);
+            this.blue = lerp(local, 0.9f, 1.0f);
+        } else if (progress < 0.22f) {
+            // 15-22% : Transition Violet -> Bleu Azur (Très rapide)
+            float local = (progress - 0.15f) / (0.22f - 0.15f);
+            this.red = lerp(local, 0.8f, 0.6f);
+            this.green = lerp(local, 0.7f, 0.85f);
+            this.blue = lerp(local, 1.0f, 1.0f);
+        } else {
+            // 22-100% : Transition Bleu -> Blanc, puis Blanc pur
+            float local = (progress - 0.22f) / (1.0f - 0.22f);
+            // On atteint le blanc très vite dans ce dernier segment
+            this.red = lerp(Math.min(local * 2.0f, 1.0f), 0.6f, 1.0f);
+            this.green = lerp(Math.min(local * 2.0f, 1.0f), 0.85f, 1.0f);
+            this.blue = 1.0f;
+        }
+
+        // 3. Rendu
         this.alpha = (float) Math.sin(Math.PI * progress);
+        this.scale = 0.4f * (1.1f - progress);
+    }
+
+    // N'oublie pas d'ajouter cette méthode utilitaire si elle n'y est pas déjà
+    private float lerp(float delta, float start, float end) {
+        return start + delta * (end - start);
     }
 
     @Override
     public ParticleTextureSheet getType() {
-        return ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT;
+        return ParticleTextureSheet.PARTICLE_SHEET_OPAQUE;
     }
 }

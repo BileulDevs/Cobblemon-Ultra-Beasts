@@ -229,28 +229,29 @@ public class WormholeEntity extends Entity {
     private void summonPortal() {
         if (!(this.getWorld() instanceof ServerWorld world)) return;
 
-        double radius = 1.7;
-        // On récupère les coordonnées actuelles de l'entité
+        int numberOfParticles = 50;
+
+        double radius = 2;
+
         double centerX = this.getX();
         double centerY = this.getY();
         double centerZ = this.getZ();
 
-        for (int i = 0; i < 80; i++) {
+        for (int i = 0; i < numberOfParticles; i++) {
             double angle = world.random.nextDouble() * 2 * Math.PI;
 
             double startX = centerX + Math.cos(angle) * radius;
             double startY = centerY + Math.sin(angle) * radius;
             double startZ = centerZ;
 
-            // On envoie le centre et la profondeur (Z - 2)
             world.spawnParticles(
                     ModParticles.WORMHOLE,
                     startX, startY, startZ,
-                    0,             // Count doit être 0
-                    centerX,       // vX
-                    centerY,       // vY
-                    centerZ - 2.0, // vZ
-                    0.0            // speed (0 car count est 0)
+                    0,
+                    centerX,
+                    centerY,
+                    centerZ,
+                    0.0
             );
         }
     }
