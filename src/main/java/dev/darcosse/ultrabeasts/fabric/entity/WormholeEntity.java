@@ -337,6 +337,9 @@ public class WormholeEntity extends Entity {
             BlockPos pSpawn = config.playerSpawn();
             player.teleport(ultraSpace, pSpawn.getX() + 0.5, pSpawn.getY(), pSpawn.getZ() + 0.5, player.getYaw(), player.getPitch());
 
+            ultraSpace.getEntitiesByType(ModEntities.RETURN_WORMHOLE, e -> true)
+                    .forEach(Entity::discard);
+
             BlockPos rSpawn = config.returnPortalSpawn();
             ReturnWormholeEntity returnPortal = new ReturnWormholeEntity(ModEntities.RETURN_WORMHOLE, ultraSpace);
             returnPortal.setPosition(
