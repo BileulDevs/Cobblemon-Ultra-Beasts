@@ -61,7 +61,7 @@ public class UltraSpaceStructureManager {
                             new StructurePart("blacephalon_part1", new BlockPos(0, 0, 0)),
                             new StructurePart("blacephalon_part2", new BlockPos(0, 0, 48))
                     ),
-                    new BlockPos(24, 89, 12),
+                    new BlockPos(24, 86, 12),
                     new BlockPos(20, 87, 42),
                     new BlockPos(20, 87, 51)
             )

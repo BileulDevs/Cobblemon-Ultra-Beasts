@@ -56,8 +56,12 @@ public class ModEvents {
                     .forEach(Entity::discard);
             world.getEntitiesByType(ModEntities.WORMHOLE, e -> true)
                     .forEach(Entity::discard);
+            world.getEntitiesByType(ModEntities.RETURN_WORMHOLE, e -> true)
+                    .forEach(Entity::discard);
             world.getEntitiesByType(ModEntities.WORMHOLE_ANIMATION, e -> true)
                     .forEach(Entity::discard);
+
+            UltraBeasts.LOGGER.info("Cleaning {} world !", world.getRegistryKey());
         }
 
         WormholeEntity.clearWormhole();
