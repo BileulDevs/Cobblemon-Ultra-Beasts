@@ -55,6 +55,15 @@ public class UltraSpaceStructureManager {
                     new BlockPos(52, 89, 24),
                     new BlockPos(47, 87, 87),
                     new BlockPos(56, 87, 91)
+            ),
+            "blacephalon", new StructureConfig(
+                    List.of(
+                            new StructurePart("blacephalon_part1", new BlockPos(0, 0, 0)),
+                            new StructurePart("blacephalon_part2", new BlockPos(0, 0, 48))
+                    ),
+                    new BlockPos(24, 89, 12),
+                    new BlockPos(20, 87, 42),
+                    new BlockPos(20, 87, 51)
             )
     );
 
@@ -171,7 +180,8 @@ public class UltraSpaceStructureManager {
         if (keys.isEmpty()) {
             return "nihilego";
         }
-        return keys.get(random.nextInt(keys.size()));
+        //return keys.get(random.nextInt(keys.size()));
+        return "blacephalon";
     }
 
     public record StructurePart(String name, BlockPos offset) {}
