@@ -31,7 +31,7 @@ public class ModCommands {
                 .then(CommandManager.literal("info")
                         .executes(ModCommands::showInfo))
                 .then(CommandManager.literal("wormhole")
-                        .requires(source -> source.hasPermissionLevel(2)) // Optionnel : niveau 2 pour gérer les portails
+                        .requires(source -> source.hasPermissionLevel(2))
                         .then(CommandManager.literal("spawn")
                                 .executes(ModCommands::summonWormhole))
                         .then(CommandManager.literal("clear")
