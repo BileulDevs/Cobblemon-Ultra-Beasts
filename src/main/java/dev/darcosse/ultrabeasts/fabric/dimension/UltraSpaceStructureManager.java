@@ -64,6 +64,20 @@ public class UltraSpaceStructureManager {
                     new BlockPos(24, 86, 12),
                     new BlockPos(20, 87, 42),
                     new BlockPos(20, 87, 51)
+            ),
+            "pheromosa", new StructureConfig(
+                    List.of(
+                            new StructurePart("pheromosa_part1", new BlockPos(0, 0, 0)),
+                            new StructurePart("pheromosa_part1_1", new BlockPos(0, 48, 0)),
+                            new StructurePart("pheromosa_part2", new BlockPos(0, 0, 48)),
+                            new StructurePart("pheromosa_part3", new BlockPos(0, 0, 96)),
+                            new StructurePart("pheromosa_part4", new BlockPos(48, 0, 0)),
+                            new StructurePart("pheromosa_part5", new BlockPos(48, 0, 48)),
+                            new StructurePart("pheromosa_part6", new BlockPos(48, 0, 96))
+                    ),
+                    new BlockPos(37, 99, 29),
+                    new BlockPos(40, 98, 95),
+                    new BlockPos(50, 95, 108)
             )
     );
 
@@ -181,7 +195,7 @@ public class UltraSpaceStructureManager {
             return "nihilego";
         }
         //return keys.get(random.nextInt(keys.size()));
-        return "blacephalon";
+        return "pheromosa";
     }
 
     public record StructurePart(String name, BlockPos offset) {}
