@@ -42,6 +42,19 @@ public class UltraSpaceStructureManager {
                     new BlockPos(26, 86, 20),    // Position du Pokémon
                     new BlockPos(26, 86, 76),    // Arrivée du joueur
                     new BlockPos(26, 87, 83)     // Position du portail retour
+            ),
+            "kartana", new StructureConfig(
+                    List.of(
+                            new StructurePart("kartana_part1", new BlockPos(0, 0, 0)),
+                            new StructurePart("kartana_part2", new BlockPos(0, 0, 48)),
+                            new StructurePart("kartana_part3", new BlockPos(0, 0, 96)),
+                            new StructurePart("kartana_part4", new BlockPos(48, 0, 0)),
+                            new StructurePart("kartana_part5", new BlockPos(48, 0, 48)),
+                            new StructurePart("kartana_part6", new BlockPos(48, 0, 96))
+                    ),
+                    new BlockPos(52, 89, 24),
+                    new BlockPos(47, 87, 87),
+                    new BlockPos(56, 87, 91)
             )
     );
 
@@ -102,7 +115,7 @@ public class UltraSpaceStructureManager {
         if (pos == null) return;
 
         BlockPos start = pos.add(-32, -16, -32);
-        BlockPos end = pos.add(150, 100, 150);
+        BlockPos end = pos.add(150, 140, 150);
 
         for (BlockPos target : BlockPos.iterate(start, end)) {
             if (!world.isAir(target)) {
