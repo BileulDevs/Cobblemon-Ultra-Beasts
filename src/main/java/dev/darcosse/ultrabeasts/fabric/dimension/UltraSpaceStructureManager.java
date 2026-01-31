@@ -147,6 +147,17 @@ public class UltraSpaceStructureManager {
                     new BlockPos(35, 87, 33),
                     new BlockPos(40, 83, 57),
                     new BlockPos(50, 84, 60)
+            ),
+            "stakataka", new StructureConfig(
+                    List.of(
+                            new StructurePart("stakataka_part1", new BlockPos(0, 0, 0)),
+                            new StructurePart("stakataka_part2", new BlockPos(0, 0, 48)),
+                            new StructurePart("stakataka_part3", new BlockPos(48, 0, 0)),
+                            new StructurePart("stakataka_part4", new BlockPos(48, 0, 48))
+                    ),
+                    new BlockPos(42, 82, 35),
+                    new BlockPos(20, 84, 47),
+                    new BlockPos(38, 85, 66)
             )
     );
 
@@ -266,7 +277,7 @@ public class UltraSpaceStructureManager {
             return "poipole";
         }
         //return keys.get(random.nextInt(keys.size()));
-        return "poipole";
+        return "stakataka";
     }
 
     private static void clearItems(ServerWorld world) {
