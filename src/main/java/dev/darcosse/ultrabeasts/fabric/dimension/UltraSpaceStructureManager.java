@@ -120,6 +120,33 @@ public class UltraSpaceStructureManager {
                     new BlockPos(58, 109, 36),
                     new BlockPos(23, 100, 120),
                     new BlockPos(23, 101, 130)
+            ),
+            "xurkitree", new StructureConfig(
+                    List.of(
+                            new StructurePart("xurkitree_part1", new BlockPos(0, 0, 0)),
+                            new StructurePart("xurkitree_part1_1", new BlockPos(0, 48, 0)),
+                            new StructurePart("xurkitree_part2", new BlockPos(0, 0, 48)),
+                            new StructurePart("xurkitree_part2_1", new BlockPos(0, 48, 48)),
+                            new StructurePart("xurkitree_part3", new BlockPos(0, 0, 96)),
+                            new StructurePart("xurkitree_part4", new BlockPos(48, 0, 0)),
+                            new StructurePart("xurkitree_part4_1", new BlockPos(48, 48, 0)),
+                            new StructurePart("xurkitree_part5", new BlockPos(48, 0, 48)),
+                            new StructurePart("xurkitree_part6", new BlockPos(48, 0, 96))
+                    ),
+                    new BlockPos(40, 113, 34),
+                    new BlockPos(34, 96, 114),
+                    new BlockPos(51, 94, 118)
+            ),
+            "poipole", new StructureConfig(
+                    List.of(
+                            new StructurePart("poipole_part1", new BlockPos(0, 0, 0)),
+                            new StructurePart("poipole_part2", new BlockPos(0, 0, 48)),
+                            new StructurePart("poipole_part3", new BlockPos(48, 0, 0)),
+                            new StructurePart("poipole_part4", new BlockPos(48, 0, 48))
+                    ),
+                    new BlockPos(26, 86, 20),
+                    new BlockPos(26, 86, 76),
+                    new BlockPos(26, 87, 83)
             )
     );
 
@@ -182,7 +209,7 @@ public class UltraSpaceStructureManager {
         if (pos == null) return;
 
         BlockPos start = pos.add(-32, -16, -32);
-        BlockPos end = pos.add(150, 140, 150);
+        BlockPos end = pos.add(160, 140, 160);
 
         for (BlockPos target : BlockPos.iterate(start, end)) {
             if (!world.isAir(target)) {
@@ -239,7 +266,7 @@ public class UltraSpaceStructureManager {
             return "nihilego";
         }
         //return keys.get(random.nextInt(keys.size()));
-        return "celesteela";
+        return "poipole";
     }
 
     private static void clearItems(ServerWorld world) {
