@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.darcosse"
-version = "3.0+Cobblemon-1.7.2"
+version = "3.0+Cobblemon-1.7.3"
 
 architectury {
     platformSetupLoomIde()
@@ -30,14 +30,14 @@ repositories {
 
 dependencies {
     minecraft("net.minecraft:minecraft:1.21.1")
-    //mappings("net.fabricmc:yarn:1.21.1+build.1:v2")
+
     mappings("net.fabricmc:yarn:1.21.1+build.3:v2")
     modImplementation("net.fabricmc:fabric-loader:0.18.1")
 
     modImplementation("net.fabricmc.fabric-api:fabric-api:0.116.7+1.21.1")
 
     modImplementation("net.fabricmc:fabric-language-kotlin:1.13.6+kotlin.2.2.20")
-    modImplementation("com.cobblemon:fabric:1.7.2+1.21.1-SNAPSHOT")
+    modImplementation("com.cobblemon:fabric:1.7.3+1.21.1-SNAPSHOT")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
