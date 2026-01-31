@@ -339,14 +339,19 @@ public class WormholeEntity extends Entity {
             ultraSpace.getEntitiesByType(ModEntities.RETURN_WORMHOLE, e -> true)
                     .forEach(Entity::discard);
 
-            BlockPos rSpawn = config.returnPortalSpawn();
-            ReturnWormholeEntity returnPortal = new ReturnWormholeEntity(ModEntities.RETURN_WORMHOLE, ultraSpace);
-            returnPortal.setPosition(
-                    rSpawn.getX() + 0.5,
-                    rSpawn.getY() + 2.0,
-                    rSpawn.getZ() + 0.5
-            );
-            ultraSpace.spawnEntity(returnPortal);
+            player.getServer().execute(() -> {
+                ultraSpace.getEntitiesByType(ModEntities.RETURN_WORMHOLE, e -> true)
+                        .forEach(Entity::discard);
+
+                BlockPos rSpawn = config.returnPortalSpawn();
+                ReturnWormholeEntity returnPortal = new ReturnWormholeEntity(ModEntities.RETURN_WORMHOLE, ultraSpace);
+                returnPortal.setPosition(
+                        rSpawn.getX() + 0.5,
+                        rSpawn.getY() + 2.0,
+                        rSpawn.getZ() + 0.5
+                );
+                ultraSpace.spawnEntity(returnPortal);
+            });
 
             MinecraftServer server = player.getServer();
             new Thread(() -> {
