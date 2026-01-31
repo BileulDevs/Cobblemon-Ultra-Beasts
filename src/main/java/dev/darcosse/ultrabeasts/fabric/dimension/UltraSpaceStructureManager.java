@@ -6,6 +6,8 @@ import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.darcosse.ultrabeasts.fabric.UltraBeasts;
 import dev.darcosse.ultrabeasts.fabric.registry.ModDimensions;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.structure.StructureTemplate;
@@ -92,6 +94,17 @@ public class UltraSpaceStructureManager {
                     new BlockPos(31, 113, 12),
                     new BlockPos(38, 118, 63),
                     new BlockPos(29, 117, 66)
+            ),
+            "guzzlord", new StructureConfig(
+                    List.of(
+                            new StructurePart("guzzlord_part1", new BlockPos(0, 0, 0)),
+                            new StructurePart("guzzlord_part2", new BlockPos(0, 0, 48)),
+                            new StructurePart("guzzlord_part3", new BlockPos(48, 0, 0)),
+                            new StructurePart("guzzlord_part4", new BlockPos(48, 0, 48))
+                    ),
+                    new BlockPos(43, 81, 38),
+                    new BlockPos(40, 83, 85),
+                    new BlockPos(56, 83, 91)
             )
     );
 
@@ -137,6 +150,8 @@ public class UltraSpaceStructureManager {
 
         placedStructures.put(world, basePos);
 
+        clearItems(world);
+
         spawnUltraBeast(world, structureKey, config.pokemonSpawn);
 
         UltraBeasts.LOGGER.info("Placed composite structure {} at {}", structureKey, basePos);
@@ -160,14 +175,14 @@ public class UltraSpaceStructureManager {
             }
         }
 
-        killAllPokemonsOfWorld(world);
+        killAllPokemonOfWorld(world);
     }
 
     /**
      * Supprime tous les Pokémon de la dimension de manière sécurisée.
      */
-    public static void killAllPokemonsOfWorld(ServerWorld world) {
-        if (world == null || world.getPlayers().isEmpty()) return;
+    public static void killAllPokemonOfWorld(ServerWorld world) {
+        if (world == null || world.getPlayers().isEmpty() || !world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
 
         List<PokemonEntity> toRemove = new ArrayList<>();
         world.iterateEntities().forEach(entity -> {
@@ -209,7 +224,13 @@ public class UltraSpaceStructureManager {
             return "nihilego";
         }
         //return keys.get(random.nextInt(keys.size()));
-        return "buzzwole";
+        return "guzzlord";
+    }
+
+    private static void clearItems(ServerWorld world) {
+        if (!world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
+        world.getEntitiesByType(EntityType.ITEM, itemEntity ->  true)
+                .forEach(Entity::discard);
     }
 
     public record StructurePart(String name, BlockPos offset) {}
