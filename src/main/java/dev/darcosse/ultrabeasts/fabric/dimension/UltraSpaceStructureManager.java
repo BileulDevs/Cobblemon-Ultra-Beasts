@@ -105,6 +105,21 @@ public class UltraSpaceStructureManager {
                     new BlockPos(43, 81, 38),
                     new BlockPos(40, 83, 85),
                     new BlockPos(56, 83, 91)
+            ),
+            "celesteela", new StructureConfig(
+                    List.of(
+                            new StructurePart("celesteela_part1", new BlockPos(0, 0, 0)),
+                            new StructurePart("celesteela_part2", new BlockPos(0, 0, 48)),
+                            new StructurePart("celesteela_part3", new BlockPos(0, 0, 96)),
+                            new StructurePart("celesteela_part4", new BlockPos(0, 0, 144)),
+                            new StructurePart("celesteela_part5", new BlockPos(48, 0, 0)),
+                            new StructurePart("celesteela_part6", new BlockPos(48, 0, 48)),
+                            new StructurePart("celesteela_part7", new BlockPos(48, 0, 96)),
+                            new StructurePart("celesteela_part8", new BlockPos(48, 0, 144))
+                    ),
+                    new BlockPos(58, 109, 36),
+                    new BlockPos(23, 100, 120),
+                    new BlockPos(23, 101, 130)
             )
     );
 
@@ -224,7 +239,7 @@ public class UltraSpaceStructureManager {
             return "nihilego";
         }
         //return keys.get(random.nextInt(keys.size()));
-        return "guzzlord";
+        return "celesteela";
     }
 
     private static void clearItems(ServerWorld world) {
