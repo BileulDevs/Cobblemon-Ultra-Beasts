@@ -327,7 +327,7 @@ public class WormholeEntity extends Entity {
                 return;
             }
 
-            killAllPokemonOfWorld(ultraSpace);
+            UltraSpaceStructureManager.killAllPokemonOfWorld(ultraSpace);
             grantUltraBeastsAdvancement(player);
             UltraSpaceStructureManager.placeStructure(ultraSpace, structureKey);
 
@@ -391,18 +391,6 @@ public class WormholeEntity extends Entity {
     public static void clearWormhole() {
         activeWormhole = null;
         isSpawning = false;
-    }
-
-    public static void killAllPokemonOfWorld(ServerWorld ultraSpace) {
-        if (ultraSpace == null || ultraSpace.getPlayers().isEmpty()) {
-            return;
-        }
-
-        ultraSpace.iterateEntities().forEach(entity -> {
-            if (entity != null && entity.getType() == CobblemonEntities.POKEMON) {
-                entity.discard();
-            }
-        });
     }
 
     private void grantUltraBeastsAdvancement(ServerPlayerEntity player) {
