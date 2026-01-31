@@ -22,7 +22,7 @@ public class ModEvents {
 
     public static void initialize() {
         CobblemonEvents.POKEDEX_DATA_CHANGED_POST.subscribe(
-                Priority.HIGHEST, CaptureUltraBeastHandler.registerGrantUltraBeastAdvancements()
+                Priority.HIGHEST, CaptureUltraBeastHandler.initialize()
         );
 
         ServerTickEvents.END_SERVER_TICK.register(ModEvents::onServerTick);

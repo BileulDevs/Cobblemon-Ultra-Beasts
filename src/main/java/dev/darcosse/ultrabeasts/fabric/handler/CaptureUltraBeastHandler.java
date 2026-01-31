@@ -12,7 +12,7 @@ import net.minecraft.util.Identifier;
 
 
 public class CaptureUltraBeastHandler {
-    public static Function1<? super PokedexDataChangedEvent.Post, Unit> registerGrantUltraBeastAdvancements() {
+    public static Function1<? super PokedexDataChangedEvent.Post, Unit> initialize() {
         return event -> {
             ServerPlayerEntity player = event.getDataSource().getPokemon().getOwnerPlayer();
 
