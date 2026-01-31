@@ -7,7 +7,6 @@ import dev.darcosse.ultrabeasts.fabric.dimension.UltraSpaceStructureManager;
 import dev.darcosse.ultrabeasts.fabric.registry.*;
 import net.minecraft.advancement.AdvancementEntry;
 import net.minecraft.advancement.AdvancementProgress;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
@@ -328,7 +327,7 @@ public class WormholeEntity extends Entity {
                 return;
             }
 
-            killAllPokemonsOfWorld(ultraSpace);
+            killAllPokemonOfWorld(ultraSpace);
             grantUltraBeastsAdvancement(player);
             UltraSpaceStructureManager.placeStructure(ultraSpace, structureKey);
 
@@ -394,7 +393,7 @@ public class WormholeEntity extends Entity {
         isSpawning = false;
     }
 
-    public static void killAllPokemonsOfWorld(ServerWorld ultraSpace) {
+    public static void killAllPokemonOfWorld(ServerWorld ultraSpace) {
         if (ultraSpace == null || ultraSpace.getPlayers().isEmpty()) {
             return;
         }

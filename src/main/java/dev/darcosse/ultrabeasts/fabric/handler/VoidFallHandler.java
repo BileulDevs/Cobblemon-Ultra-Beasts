@@ -68,7 +68,7 @@ public class VoidFallHandler {
     }
 
     public static void handleUltraBeastVoidFall(ServerPlayerEntity player) {
-        WormholeEntity.killAllPokemonsOfWorld((ServerWorld) player.getWorld());
+        UltraSpaceStructureManager.killAllPokemonOfWorld((ServerWorld) player.getWorld());
         teleportBackToOverworld(player);
     }
 
