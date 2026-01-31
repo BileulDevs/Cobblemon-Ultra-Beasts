@@ -276,8 +276,7 @@ public class UltraSpaceStructureManager {
         if (keys.isEmpty()) {
             return "poipole";
         }
-        //return keys.get(random.nextInt(keys.size()));
-        return "stakataka";
+        return keys.get(random.nextInt(keys.size()));
     }
 
     private static void clearItems(ServerWorld world) {
