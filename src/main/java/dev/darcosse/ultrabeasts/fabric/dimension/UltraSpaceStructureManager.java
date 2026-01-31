@@ -144,9 +144,9 @@ public class UltraSpaceStructureManager {
                             new StructurePart("poipole_part3", new BlockPos(48, 0, 0)),
                             new StructurePart("poipole_part4", new BlockPos(48, 0, 48))
                     ),
-                    new BlockPos(26, 86, 20),
-                    new BlockPos(26, 86, 76),
-                    new BlockPos(26, 87, 83)
+                    new BlockPos(35, 87, 33),
+                    new BlockPos(40, 83, 57),
+                    new BlockPos(50, 84, 60)
             )
     );
 
@@ -263,7 +263,7 @@ public class UltraSpaceStructureManager {
     public static String getRandomStructureKey(Random random) {
         List<String> keys = new ArrayList<>(CONFIGS.keySet());
         if (keys.isEmpty()) {
-            return "nihilego";
+            return "poipole";
         }
         //return keys.get(random.nextInt(keys.size()));
         return "poipole";
