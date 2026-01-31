@@ -24,7 +24,6 @@ public class UltraSpaceStructureManager {
 
     /**
      * Regroupe tous les points d'intérêt relatifs à une structure.
-     * Les positions sont relatives au basePos (0, 64, 0).
      */
     public record StructureConfig(
             List<StructurePart> parts,
@@ -78,6 +77,21 @@ public class UltraSpaceStructureManager {
                     new BlockPos(37, 99, 29),
                     new BlockPos(40, 98, 95),
                     new BlockPos(50, 95, 108)
+            ),
+            "buzzwole", new StructureConfig(
+                    List.of(
+                            new StructurePart("buzzwole_part1", new BlockPos(0, 0, 0)),
+                            new StructurePart("buzzwole_part1_1", new BlockPos(0, 48, 0)),
+                            new StructurePart("buzzwole_part2", new BlockPos(0, 0, 48)),
+                            new StructurePart("buzzwole_part2_1", new BlockPos(0, 48, 48)),
+                            new StructurePart("buzzwole_part3", new BlockPos(48, 0, 0)),
+                            new StructurePart("buzzwole_part3_1", new BlockPos(48, 48, 0)),
+                            new StructurePart("buzzwole_part4", new BlockPos(48, 0, 48)),
+                            new StructurePart("buzzwole_part4_1", new BlockPos(48, 48, 48))
+                    ),
+                    new BlockPos(31, 113, 12),
+                    new BlockPos(38, 118, 63),
+                    new BlockPos(29, 117, 66)
             )
     );
 
@@ -195,7 +209,7 @@ public class UltraSpaceStructureManager {
             return "nihilego";
         }
         //return keys.get(random.nextInt(keys.size()));
-        return "pheromosa";
+        return "buzzwole";
     }
 
     public record StructurePart(String name, BlockPos offset) {}
