@@ -82,6 +82,8 @@ public class ReturnWormholeEntity extends Entity {
     }
 
     private void teleportBack(ServerPlayerEntity player) {
+        if (this.isRemoved()) return;
+
         this.getWorld().playSound(null, this.getBlockPos(),
                 SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.HOSTILE, 1.0f, 1.0f);
 
