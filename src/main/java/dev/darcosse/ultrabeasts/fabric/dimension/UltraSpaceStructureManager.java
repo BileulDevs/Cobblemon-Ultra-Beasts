@@ -235,7 +235,7 @@ public class UltraSpaceStructureManager {
         state.structureBlocks.clear();
         state.markDirty();
 
-        UltraBeasts.LOGGER.info("Structure Ultra-Space supprimée via NBT (No-Lag).");
+        UltraBeasts.LOGGER.info("Ultra-Space structure deleted.");
     }
 
     /**
