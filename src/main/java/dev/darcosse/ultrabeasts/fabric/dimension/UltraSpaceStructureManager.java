@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.darcosse.ultrabeasts.fabric.UltraBeasts;
 import dev.darcosse.ultrabeasts.fabric.registry.ModDimensions;
+import dev.darcosse.ultrabeasts.fabric.registry.ModEntities;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -40,9 +41,9 @@ public class UltraSpaceStructureManager {
                             new StructurePart("nihilego_part1", new BlockPos(0, 0, 0)),
                             new StructurePart("nihilego_part2", new BlockPos(0, 0, 48))
                     ),
-                    new BlockPos(26, 86, 20),    // Position du Pokémon
-                    new BlockPos(26, 86, 76),    // Arrivée du joueur
-                    new BlockPos(26, 87, 83)     // Position du portail retour
+                    new BlockPos(26, 86, 20),
+                    new BlockPos(26, 86, 76),
+                    new BlockPos(26, 87, 83)
             ),
             "kartana", new StructureConfig(
                     List.of(
@@ -174,11 +175,10 @@ public class UltraSpaceStructureManager {
      * Génère la structure complète et fait apparaître l'Ultra-Chimère.
      */
     public static void placeStructure(ServerWorld world, String structureKey) {
-        if (!world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) {
-            return;
-        }
-
+        if (!world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
         if (placedStructures.containsKey(world)) return;
+
+        removeStructure(world);
 
         StructureConfig config = CONFIGS.get(structureKey);
         if (config == null) {
@@ -217,10 +217,10 @@ public class UltraSpaceStructureManager {
         if (!world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
 
         BlockPos pos = placedStructures.remove(world);
-        if (pos == null) return;
+        BlockPos basePos = (pos != null) ? pos : new BlockPos(0, 64, 0);
 
-        BlockPos start = pos.add(-32, -16, -32);
-        BlockPos end = pos.add(160, 140, 160);
+        BlockPos start = basePos.add(-32, -16, -32);
+        BlockPos end = basePos.add(180, 140, 180);
 
         for (BlockPos target : BlockPos.iterate(start, end)) {
             if (!world.isAir(target)) {
@@ -228,24 +228,37 @@ public class UltraSpaceStructureManager {
             }
         }
 
-        killAllPokemonOfWorld(world);
+        List<Entity> toRemove = new ArrayList<>();
+        world.iterateEntities().forEach(entity -> {
+            if (entity != null && !(entity instanceof net.minecraft.entity.player.PlayerEntity)) {
+                toRemove.add(entity);
+            }
+        });
+
+        for (Entity entity : toRemove) {
+            if(!entity.isRemoved()) {
+                entity.discard();
+            }
+        }
+
+        UltraBeasts.LOGGER.info("Ultra-Space fully cleared at {}", basePos);
     }
 
     /**
      * Supprime tous les Pokémon de la dimension de manière sécurisée.
      */
     public static void killAllPokemonOfWorld(ServerWorld world) {
-        if (world == null || world.getPlayers().isEmpty() || !world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
+        if (world == null || !world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
 
-        List<PokemonEntity> toRemove = new ArrayList<>();
-        world.iterateEntities().forEach(entity -> {
-            if (entity instanceof PokemonEntity pokemon) {
-                toRemove.add(pokemon);
+        List<Entity> targets = new ArrayList<>();
+        world.iterateEntities().forEach(e -> {
+            if (e instanceof PokemonEntity) {
+                targets.add(e);
             }
         });
 
-        for (PokemonEntity p : toRemove) {
-            p.discard();
+        for (Entity pokemon : targets) {
+            pokemon.discard();
         }
     }
 
@@ -260,7 +273,6 @@ public class UltraSpaceStructureManager {
                 null,
                 pokemonEntity -> {
                     pokemonEntity.setAiDisabled(true);
-
                     return null;
                 }
         );
@@ -281,8 +293,16 @@ public class UltraSpaceStructureManager {
 
     private static void clearItems(ServerWorld world) {
         if (!world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
-        world.getEntitiesByType(EntityType.ITEM, itemEntity ->  true)
-                .forEach(Entity::discard);
+
+        world.getServer().execute(() -> {
+            world.getEntitiesByType(ModEntities.RETURN_WORMHOLE, e -> e != null)
+                    .forEach(Entity::discard);
+
+            world.getEntitiesByType(EntityType.ITEM, item -> item != null)
+                    .forEach(Entity::discard);
+
+            UltraBeasts.LOGGER.info("Ultra-Space items cleared after structure placement.");
+        });
     }
 
     public record StructurePart(String name, BlockPos offset) {}
