@@ -12,14 +12,12 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.structure.StructurePlacementData;
 import net.minecraft.structure.StructureTemplate;
-import net.minecraft.util.BlockMirror;
-import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.math.random.Random;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -162,8 +160,6 @@ public class UltraSpaceStructureManager {
             )
     );
 
-    private static final Map<ServerWorld, BlockPos> placedStructures = new HashMap<>();
-
     /**
      * Récupère la configuration d'une structure par son nom.
      */
@@ -176,38 +172,38 @@ public class UltraSpaceStructureManager {
      */
     public static void placeStructure(ServerWorld world, String structureKey) {
         if (!world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
-        if (placedStructures.containsKey(world)) return;
 
         removeStructure(world);
 
         StructureConfig config = CONFIGS.get(structureKey);
-        if (config == null) {
-            UltraBeasts.LOGGER.error("Structure config not found for: {}", structureKey);
-            return;
-        }
+        if (config == null) return;
 
         BlockPos basePos = new BlockPos(0, 64, 0);
+        UltraSpaceState state = UltraSpaceState.getServerState(world);
+        state.structureBlocks.clear();
 
         for (StructurePart part : config.parts) {
             Identifier id = Identifier.of(UltraBeasts.MOD_ID, part.name);
             StructureTemplate template = world.getStructureTemplateManager().getTemplateOrBlank(id);
 
-            StructurePlacementData data = new StructurePlacementData()
-                    .setIgnoreEntities(false)
-                    .setRotation(BlockRotation.NONE)
-                    .setMirror(BlockMirror.NONE);
+            BlockPos startPos = basePos.add(part.offset);
 
-            BlockPos finalPos = basePos.add(part.offset);
-            template.place(world, finalPos, finalPos, data, world.getRandom(), 2);
+            Vec3i sizeV = template.getSize();
+            BlockPos size = new BlockPos(sizeV.getX(), sizeV.getY(), sizeV.getZ());
+
+            BlockPos endPos = startPos.add(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
+
+            for (BlockPos p : BlockPos.iterate(startPos, endPos)) {
+                state.structureBlocks.add(p.toImmutable());
+            }
+
+            template.place(world, startPos, startPos, new StructurePlacementData(), world.getRandom(), 2);
         }
 
-        placedStructures.put(world, basePos);
+        state.markDirty();
 
         clearItems(world);
-
         spawnUltraBeast(world, structureKey, config.pokemonSpawn);
-
-        UltraBeasts.LOGGER.info("Placed composite structure {} at {}", structureKey, basePos);
     }
 
     /**
@@ -216,16 +212,14 @@ public class UltraSpaceStructureManager {
     public static void removeStructure(ServerWorld world) {
         if (!world.getRegistryKey().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
 
-        BlockPos pos = placedStructures.remove(world);
-        BlockPos basePos = (pos != null) ? pos : new BlockPos(0, 64, 0);
+        UltraSpaceState state = UltraSpaceState.getServerState(world);
 
-        BlockPos start = basePos.add(-32, -16, -32);
-        BlockPos end = basePos.add(180, 140, 180);
+        if (state.structureBlocks.isEmpty()) {
+            return;
+        }
 
-        for (BlockPos target : BlockPos.iterate(start, end)) {
-            if (!world.isAir(target)) {
-                world.setBlockState(target, Blocks.AIR.getDefaultState(), 2 | 16 | 128);
-            }
+        for (BlockPos pos : state.structureBlocks) {
+            world.setBlockState(pos, Blocks.AIR.getDefaultState(), 128);
         }
 
         List<Entity> toRemove = new ArrayList<>();
@@ -234,14 +228,14 @@ public class UltraSpaceStructureManager {
                 toRemove.add(entity);
             }
         });
-
         for (Entity entity : toRemove) {
-            if(!entity.isRemoved()) {
-                entity.discard();
-            }
+            if (!entity.isRemoved()) entity.discard();
         }
 
-        UltraBeasts.LOGGER.info("Ultra-Space fully cleared at {}", basePos);
+        state.structureBlocks.clear();
+        state.markDirty();
+
+        UltraBeasts.LOGGER.info("Structure Ultra-Space supprimée via NBT (No-Lag).");
     }
 
     /**
