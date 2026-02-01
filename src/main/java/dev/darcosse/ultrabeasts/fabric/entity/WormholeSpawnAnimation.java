@@ -4,6 +4,7 @@ import dev.darcosse.ultrabeasts.fabric.registry.ModEntities;
 import dev.darcosse.ultrabeasts.fabric.registry.ModSounds;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.sound.Sound;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.data.DataTracker;
@@ -12,6 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.AffineTransformation;
@@ -65,7 +67,7 @@ public class WormholeSpawnAnimation extends Entity {
             if (!blocksSpawned) {
                 spawnFlyingBlocks();
                 blocksSpawned = true;
-                this.getWorld().playSound(null, targetPos, ModSounds.WORMHOLE_ANIMATION_SPAWN, SoundCategory.HOSTILE, 2.0f, 0.4f);
+                this.getWorld().playSound(null, targetPos, SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.HOSTILE, 4.0f, 1.0f);
             }
             animateFlyingBlocks();
         } else if (!finalEntitySpawned) {
