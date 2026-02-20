@@ -1,24 +1,29 @@
 {
-  "portal_spawn": {
+  "wormhole_spawn": {
+    "category": "hostile",
+    "subtitle": "entity.cobblemon_ultrabeast.wormhole.spawn",
     "sounds": [
       {
-        "name": "cobblemon_ultrabeast:portal_spawn",
+        "name": "cobblemon_ultrabeast:wormhole_spawn",
         "stream": false
       }
     ]
   },
-  "portal_ambient": {
+  "wormhole_animation_spawn": {
+    "category": "hostile",
     "sounds": [
       {
-        "name": "cobblemon_ultrabeast:portal_ambient",
-        "stream": true
+        "name": "cobblemon_ultrabeast:wormhole_animation_spawn",
+        "stream": false
       }
     ]
   },
-  "core_used": {
+  "wormhole_ambient": {
+    "category": "hostile",
+    "subtitle": "entity.cobblemon_ultrabeast.wormhole.ambient",
     "sounds": [
       {
-        "name": "cobblemon_ultrabeast:core_used",
+        "name": "cobblemon_ultrabeast:wormhole_ambient",
         "stream": true
       }
     ]

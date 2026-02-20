@@ -4,16 +4,16 @@
       "id": "cobblemon:pokemon_model",
       "components": {
         "cobblemon:pokemon_item": {
-          "species": "cobblemon:necrozma",
+          "species": "cobblemon:buzzwole",
           "aspects": []
         }
       }
     },
     "title": {
-      "translate": "advancement.cobblemon_chimeras.enter_chimeras_dimension.title"
+      "translate": "advancement.ultrabeasts.enter_ultra_space_dimension.title"
     },
     "description": {
-      "translate": "advancement.cobblemon_chimeras.enter_chimeras_dimension.description"
+      "translate": "advancement.ultrabeasts.enter_ultra_space_dimension.description"
     },
     "background": "minecraft:textures/block/obsidian.png",
     "frame": "task",
@@ -24,7 +24,7 @@
     "enter_dimension": {
       "trigger": "minecraft:changed_dimension",
       "conditions": {
-        "to": "cobblemon_ultrabeast:chimeras_dimension"
+        "to": "cobblemon_ultrabeast:ultra_space"
       }
     }
   },

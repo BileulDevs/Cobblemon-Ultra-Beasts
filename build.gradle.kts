@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.darcosse"
-version = "2.2+Cobblemon-1.7.1"
+version = "3.1+Cobblemon-1.7.1"
 
 architectury {
     platformSetupLoomIde()
@@ -30,7 +30,7 @@ repositories {
 
 dependencies {
     minecraft("net.minecraft:minecraft:1.21.1")
-    //mappings("net.fabricmc:yarn:1.21.1+build.1:v2")
+
     mappings("net.fabricmc:yarn:1.21.1+build.3:v2")
     modImplementation("net.fabricmc:fabric-loader:0.18.1")
 
