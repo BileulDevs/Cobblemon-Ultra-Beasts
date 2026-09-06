@@ -2,6 +2,7 @@ package dev.darcosse.ultrabeasts.fabric.handler;
 
 import com.cobblemon.mod.common.api.events.pokemon.PokedexDataChangedEvent;
 import com.cobblemon.mod.common.api.pokedex.PokedexEntryProgress;
+import com.cobblemon.mod.common.api.pokedex.entry.PokedexEntry;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.darcosse.ultrabeasts.fabric.UltraBeasts;
 import kotlin.Unit;
@@ -18,7 +19,7 @@ public class CaptureUltraBeastHandler {
 
             Pokemon pokemon = event.getDataSource().getPokemon();
 
-            if (pokemon.isUltraBeast() && event.getPokedexManager().getKnowledgeForSpecies(pokemon.getSpecies().resourceIdentifier) == PokedexEntryProgress.CAUGHT) {
+            if (pokemon.isUltraBeast() && event.getPokedexManager().getKnowledgeForSpecies(pokemon.getSpecies().resourceIdentifier) == PokedexEntryProgress.OWNED) {
 
                 Identifier advancementId = Identifier.of(UltraBeasts.MOD_ID, "ultra_beast_master");
                 AdvancementEntry advancement = player.getServer().getAdvancementLoader().get(advancementId);
