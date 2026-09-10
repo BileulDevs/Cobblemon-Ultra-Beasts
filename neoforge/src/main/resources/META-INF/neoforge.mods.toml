@@ -1,0 +1,34 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT License"
+
+[[mods]]
+modId = "cobblemon_ultrabeast"
+version = "${version}"
+displayName = "Cobblemon Ultra-Beasts"
+authors = "Darcosse"
+description = '''
+A mod that adds all Ultra-Beasts and the Ultra-Space dimension
+'''
+logoFile = "assets/cobblemon_ultrabeast/icon.png"
+
+[[dependencies.cobblemon_ultrabeast]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1]"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.cobblemon_ultrabeast]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.cobblemon_ultrabeast]]
+modId = "cobblemon"
+type = "required"
+versionRange = "[1.8.0,)"
+ordering = "AFTER"
+side = "BOTH"

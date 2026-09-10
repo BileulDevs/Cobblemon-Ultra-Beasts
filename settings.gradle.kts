@@ -1,10 +1,16 @@
-rootProject.name = "UltraBeasts" //By default, this is how your built jar is called
+rootProject.name = "Cobblemon-Ultra-Beasts"
 
 pluginManagement {
     repositories {
         maven("https://maven.fabricmc.net/")
         maven("https://maven.architectury.dev/")
-        maven("https://maven.minecraftforge.net/")
+        maven("https://maven.neoforged.net/releases/")
         gradlePluginPortal()
     }
 }
+
+listOf(
+    "common",
+    "neoforge",
+    "fabric"
+).forEach { include(it) }

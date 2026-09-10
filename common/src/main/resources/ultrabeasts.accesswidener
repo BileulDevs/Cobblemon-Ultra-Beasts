@@ -1,0 +1,9 @@
+accessWidener	v2	named
+
+# Display / BlockDisplay : tout est private en vanilla.
+# Le mod Fabric d'origine compilait grace a l'access widener transitif de
+# com.cobblemon:fabric ; le module common n'en beneficie pas.
+accessible	method	net/minecraft/world/entity/Display	setTransformation	(Lcom/mojang/math/Transformation;)V
+accessible	method	net/minecraft/world/entity/Display	setTransformationInterpolationDuration	(I)V
+accessible	method	net/minecraft/world/entity/Display	setTransformationInterpolationDelay	(I)V
+accessible	method	net/minecraft/world/entity/Display$BlockDisplay	setBlockState	(Lnet/minecraft/world/level/block/state/BlockState;)V
