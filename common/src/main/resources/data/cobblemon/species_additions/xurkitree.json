@@ -1,0 +1,10 @@
+{
+  "implemented": true,
+  "baseScale": 1,
+  "target": "cobblemon:xurkitree",
+  "hitbox": {
+    "width": 1.5,
+    "height": 5,
+    "fixed": false
+  }
+}

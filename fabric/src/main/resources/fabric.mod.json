@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "cobblemon_ultrabeast",
+  "version": "${version}",
+  "name": "Cobblemon Ultra-Beasts",
+  "description": "A mod that adds all Ultra-Beasts and the Ultra-Space dimension",
+  "authors": [
+    "Darcosse"
+  ],
+  "license": "MIT License",
+  "icon": "assets/cobblemon_ultrabeast/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.darcosse.ultrabeasts.fabric.UltraBeastsFabric"
+    ],
+    "client": [
+      "dev.darcosse.ultrabeasts.fabric.client.UltraBeastsFabricClient"
+    ]
+  },
+  "depends": {
+    "minecraft": "1.21.1",
+    "fabricloader": ">=0.16.0",
+    "fabric-api": ">=0.116.0",
+    "cobblemon": ">=1.8.0"
+  },
+  "accessWidener": "ultrabeasts.accesswidener"
+}

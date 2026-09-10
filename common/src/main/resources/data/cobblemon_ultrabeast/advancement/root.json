@@ -1,0 +1,35 @@
+{
+  "display": {
+    "icon": {
+      "id": "cobblemon:pokemon_model",
+      "components": {
+        "cobblemon:pokemon_item": {
+          "species": "cobblemon:buzzwole",
+          "aspects": []
+        }
+      }
+    },
+    "title": {
+      "translate": "advancement.ultrabeasts.enter_ultra_space_dimension.title"
+    },
+    "description": {
+      "translate": "advancement.ultrabeasts.enter_ultra_space_dimension.description"
+    },
+    "background": "minecraft:textures/block/obsidian.png",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "enter_dimension": {
+      "trigger": "minecraft:changed_dimension",
+      "conditions": {
+        "to": "cobblemon_ultrabeast:ultra_space"
+      }
+    }
+  },
+  "requirements": [
+    ["enter_dimension"]
+  ],
+  "sends_telemetry_event": false
+}

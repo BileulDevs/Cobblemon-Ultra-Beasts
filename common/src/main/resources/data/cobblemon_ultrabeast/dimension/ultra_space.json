@@ -1,0 +1,10 @@
+{
+  "type": "cobblemon_ultrabeast:ultra_space_type",
+  "generator": {
+    "type": "cobblemon_ultrabeast:void_generator",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "cobblemon_ultrabeast:ultra_void"
+    }
+  }
+}
