@@ -26,5 +26,6 @@
   "biome.cobblemon_ultrabeast.ultra_void": "Ultra-Void",
   "message.ultrabeasts.occupied": "§cThe Ultra-Space is already occupied.",
   "message.ultrabeasts.evicted": "§5The Ultra-Space moved on without you..",
-  "command.ultrabeasts.wormhole.spawn.occupied": "A player already holds the Ultra-Space. Wait for them to leave."
+  "command.ultrabeasts.wormhole.spawn.occupied": "A player already holds the Ultra-Space. Wait for them to leave.",
+  "command.ultrabeasts.wormhole.clear.evicted": "§7Sent %s player(s) back to the overworld."
 }

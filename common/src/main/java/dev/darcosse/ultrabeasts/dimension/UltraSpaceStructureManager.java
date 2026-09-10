@@ -335,6 +335,11 @@ public class UltraSpaceStructureManager {
                 null,
                 pokemonEntity -> {
                     pokemonEntity.setNoAi(true);
+                    pokemonEntity.setNoGravity(true);
+                    pokemonEntity.setPersistenceRequired();
+                    pokemonEntity.setInvulnerable(true);
+                    pokemonEntity.setCountsTowardsSpawnCap(false);
+
                     return null;
                 }
         );

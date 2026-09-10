@@ -1,5 +1,6 @@
 package dev.darcosse.ultrabeasts.entity;
 
+import dev.darcosse.ultrabeasts.UltraBeasts;
 import dev.darcosse.ultrabeasts.handler.VoidFallHandler;
 import dev.darcosse.ultrabeasts.registry.ModParticles;
 import net.minecraft.nbt.CompoundTag;
@@ -40,7 +41,28 @@ public class ReturnWormholeEntity extends Entity {
         }
     }
 
+
+    /**
+     * Set once if the particle type never resolves client-side.
+     *
+     * Each particle is sent with count 0 so its velocity fields can carry the
+     * destination, which means one packet per particle. If the client is
+     * missing the mod's resources it logs a warning for every single one:
+     * 18 per tick per portal is 360 lines a second, enough to stall the client
+     * and bury anything useful in the log.
+     */
+    private boolean particlesUnavailable = false;
+
     private void summonPortal(ServerLevel level) {
+        if (particlesUnavailable) return;
+
+        if (ModParticles.RETURN_WORMHOLE == null) {
+            particlesUnavailable = true;
+            UltraBeasts.LOGGER.warn(
+                    "Particle type is not registered, disabling portal particles for this entity.");
+            return;
+        }
+
         double centerX = this.getX();
         double centerY = this.getY();
         double centerZ = this.getZ() - 1;

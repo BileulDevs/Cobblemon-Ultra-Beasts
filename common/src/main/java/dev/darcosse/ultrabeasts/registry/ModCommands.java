@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import dev.darcosse.ultrabeasts.config.ConfigManager;
 import dev.darcosse.ultrabeasts.entity.WormholeEntity;
+import dev.darcosse.ultrabeasts.handler.UltraSpaceSession;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -121,10 +122,19 @@ public class ModCommands {
 
             ModEvents.cleanUp(server);
 
+            int evicted = UltraSpaceSession.evictEveryoneAndRelease(server);
+
             context.getSource().sendSuccess(
                     () -> Component.translatable("command.ultrabeasts.wormhole.clear.success", executorName),
                     true
             );
+
+            if (evicted > 0) {
+                context.getSource().sendSuccess(
+                        () -> Component.translatable("command.ultrabeasts.wormhole.clear.evicted", evicted),
+                        true
+                );
+            }
 
             return 1;
         } catch (Exception e) {

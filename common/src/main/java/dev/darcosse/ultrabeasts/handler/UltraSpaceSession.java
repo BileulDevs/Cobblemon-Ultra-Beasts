@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -136,10 +137,43 @@ public final class UltraSpaceSession {
         // replaced. Either way this player no longer belongs here.
         // Deferred: teleporting while the client is still loading the world
         // gives unreliable results.
-        ServerScheduler.schedule(EVICTION_DELAY, () -> evict(player));
+        ServerScheduler.schedule(EVICTION_DELAY, () ->
+                evict(player, "the claim had changed hands"));
     }
 
-    private static void evict(ServerPlayer player) {
+    /**
+     * Empties the dimension and frees the claim.
+     *
+     * Used by the admin clear command. Releasing the claim without evicting
+     * would let a second player walk in and have placeStructure() wipe the
+     * structure out from under whoever is still inside — exactly what the
+     * claim exists to prevent.
+     *
+     * @return how many players were sent home
+     */
+    public static int evictEveryoneAndRelease(MinecraftServer server) {
+        ServerLevel ultraSpace = server.getLevel(ModDimensions.ULTRA_SPACE_DIMENSION);
+
+        int evicted = 0;
+
+        if (ultraSpace != null) {
+            // Copy first: teleporting mutates the level's player list, and
+            // MinecraftServer.execute() does NOT defer when it is already on
+            // the server thread.
+            for (ServerPlayer player : List.copyOf(ultraSpace.players())) {
+                evict(player, "an operator cleared the dimension");
+                evicted++;
+            }
+
+            UltraSpaceStructureManager.removeStructure(ultraSpace);
+        }
+
+        release(server);
+
+        return evicted;
+    }
+
+    private static void evict(ServerPlayer player, String reason) {
         if (!player.isAlive() || player.isRemoved()) return;
         if (!isInUltraSpace(player)) return;
 
@@ -159,7 +193,7 @@ public final class UltraSpaceSession {
         // the saved position may have been built over while they were away.
         player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 100, 254, false, false, true));
 
-        UltraBeasts.LOGGER.info("Evicted {} from Ultra-Space: the claim had changed hands.",
-                player.getGameProfile().getName());
+        UltraBeasts.LOGGER.info("Evicted {} from Ultra-Space: {}.",
+                player.getGameProfile().getName(), reason);
     }
 }

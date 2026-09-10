@@ -37,6 +37,30 @@ public class WormholeEntity extends Entity {
 
     private static final int LIFESPAN_TICKS = 1200;
 
+    // ---- spawn placement -------------------------------------------------
+
+    /** Ring around the player the portal can appear in, in blocks. */
+    private static final int MIN_DISTANCE = 6;
+    private static final int SEARCH_RADIUS = 20;
+
+    private static final int SPAWN_ATTEMPTS = 40;
+
+    /**
+     * Height of the portal above the ground.
+     *
+     * The renderer draws the quad at scale 2 centred on the entity, so at 1 the
+     * portal visually rests on the ground and its hitbox overlaps a standing
+     * player: you walk straight into it. Raise it to 2 or 3 for a floating look,
+     * but then it can only be entered by clicking on it.
+     */
+    private static final int HEIGHT_ABOVE_GROUND = 3;
+
+    /** Air blocks required above the portal. */
+    private static final int CLEARANCE = 3;
+
+    /** Reject ground more than this far above or below the player. */
+    private static final int MAX_GROUND_OFFSET = 10;
+
     /** Particles emitted per tick. Each one is its own packet — see summonPortal. */
     private static final int PARTICLES_PER_TICK = 18;
     private static final double PORTAL_RADIUS = 2.0;
@@ -135,25 +159,49 @@ public class WormholeEntity extends Entity {
         }
     }
 
+    /**
+     * Picks a spot near a random player.
+     *
+     * The previous version read Heightmap.Types.WORLD_SURFACE, which counts
+     * every block including leaves and snow layers, then added a fixed offset.
+     * Over a spruce forest that put the portal six blocks above the TREETOPS,
+     * fifteen or more blocks off the ground. MOTION_BLOCKING_NO_LEAVES gives
+     * the walkable ground instead.
+     *
+     * It also never compared the candidate to the player's own altitude, so on
+     * broken terrain the portal could appear on a neighbouring cliff top.
+     */
     private static BlockPos findValidSpawnLocation(ServerLevel level, Random random) {
         var players = level.players();
         if (players.isEmpty()) return null;
 
         BlockPos playerPos = players.get(random.nextInt(players.size())).blockPosition();
 
-        final int searchRadius = 20;
-        final int attempts = 30;
-        final int minHeightAboveGround = 6;
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
-        for (int i = 0; i < attempts; i++) {
-            int x = playerPos.getX() + random.nextInt(searchRadius * 2) - searchRadius;
-            int z = playerPos.getZ() + random.nextInt(searchRadius * 2) - searchRadius;
+        for (int i = 0; i < SPAWN_ATTEMPTS; i++) {
+            // Polar sampling: an even spread through the ring, instead of the
+            // corner bias a random x/z offset produces.
+            double angle = random.nextDouble() * Math.PI * 2;
+            double distance = MIN_DISTANCE + random.nextDouble() * (SEARCH_RADIUS - MIN_DISTANCE);
 
-            BlockPos surfacePos = level.getHeightmapPos(Heightmap.Types.WORLD_SURFACE,
-                    new BlockPos(x, level.getMaxBuildHeight(), z));
-            BlockPos spawnPos = surfacePos.above(minHeightAboveGround);
+            int x = playerPos.getX() + (int) Math.round(Math.cos(angle) * distance);
+            int z = playerPos.getZ() + (int) Math.round(Math.sin(angle) * distance);
 
-            if (isValidAirSpawnLocation(level, spawnPos, minHeightAboveGround)) {
+            cursor.set(x, playerPos.getY(), z);
+
+            // Never force a chunk to load just to look for a spawn.
+            if (!level.hasChunkAt(cursor)) continue;
+
+            // First free position above solid, non-leaf ground.
+            int groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+
+            // Stay at the player's level: no cliff tops, no ravine floors.
+            if (Math.abs(groundY - playerPos.getY()) > MAX_GROUND_OFFSET) continue;
+
+            BlockPos spawnPos = new BlockPos(x, groundY + HEIGHT_ABOVE_GROUND, z);
+
+            if (isValidSpawnLocation(level, spawnPos)) {
                 return spawnPos;
             }
         }
@@ -161,20 +209,25 @@ public class WormholeEntity extends Entity {
         return null;
     }
 
-    private static boolean isValidAirSpawnLocation(ServerLevel level, BlockPos pos, int airBlocksBelow) {
+    /**
+     * Enough clear room for the portal, with something solid and dry under it.
+     */
+    private static boolean isValidSpawnLocation(ServerLevel level, BlockPos pos) {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
-        for (int i = 1; i <= airBlocksBelow; i++) {
-            cursor.set(pos.getX(), pos.getY() - i, pos.getZ());
-            if (!level.getBlockState(cursor).isAir()) return false;
-        }
-
-        for (int i = 0; i < 3; i++) {
+        // The portal renders two blocks tall, centred on the entity, so check
+        // one below as well as the headroom above.
+        for (int i = -1; i <= CLEARANCE; i++) {
             cursor.set(pos.getX(), pos.getY() + i, pos.getZ());
             if (!level.getBlockState(cursor).isAir()) return false;
         }
 
-        return true;
+        // Ground underneath, and not a lake or a lava pool.
+        cursor.set(pos.getX(), pos.getY() - HEIGHT_ABOVE_GROUND - 1, pos.getZ());
+        var ground = level.getBlockState(cursor);
+
+        if (ground.isAir()) return false;
+        return ground.getFluidState().isEmpty();
     }
 
     private static void spawnWormhole(ServerLevel level, BlockPos pos) {
@@ -201,7 +254,28 @@ public class WormholeEntity extends Entity {
      * the count is kept modest: at 50 per tick this alone was 50 packets per
      * tick per wormhole, to every player in range.
      */
+
+    /**
+     * Set once if the particle type never resolves client-side.
+     *
+     * Each particle is sent with count 0 so its velocity fields can carry the
+     * destination, which means one packet per particle. If the client is
+     * missing the mod's resources it logs a warning for every single one:
+     * 18 per tick per portal is 360 lines a second, enough to stall the client
+     * and bury anything useful in the log.
+     */
+    private boolean particlesUnavailable = false;
+
     private void summonPortal(ServerLevel level) {
+        if (particlesUnavailable) return;
+
+        if (ModParticles.WORMHOLE == null) {
+            particlesUnavailable = true;
+            UltraBeasts.LOGGER.warn(
+                    "Particle type is not registered, disabling portal particles for this entity.");
+            return;
+        }
+
         double centerX = this.getX();
         double centerY = this.getY();
         double centerZ = this.getZ() + 1;
