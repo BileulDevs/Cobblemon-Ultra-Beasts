@@ -84,7 +84,11 @@ public class ModCommands {
             }
 
             if (player != null) {
-                WormholeEntity.forceSpawnToPlayer(level, player);
+                if (!WormholeEntity.forceSpawnToPlayer(level, player)) {
+                    context.getSource().sendFailure(
+                            Component.translatable("command.ultrabeasts.wormhole.spawn.occupied"));
+                    return 0;
+                }
 
                 context.getSource().sendSuccess(
                         () -> Component.translatable("command.ultrabeasts.wormhole.spawn.success", executorName),

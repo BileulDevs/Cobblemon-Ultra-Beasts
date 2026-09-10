@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import dev.darcosse.ultrabeasts.UltraBeasts;
+import dev.darcosse.ultrabeasts.entity.ReturnWormholeEntity;
 import dev.darcosse.ultrabeasts.registry.ModDimensions;
 import dev.darcosse.ultrabeasts.registry.ModEntities;
 import net.minecraft.core.BlockPos;
@@ -15,14 +16,19 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 public class UltraSpaceStructureManager {
+
+    /** Air, resolved once instead of on every cleared block. */
+    private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     /**
      * Groups every point of interest belonging to a structure.
@@ -172,7 +178,7 @@ public class UltraSpaceStructureManager {
      * Builds the whole structure and spawns the Ultra Beast.
      */
     public static void placeStructure(ServerLevel level, String structureKey) {
-        if (!level.dimension().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
+        if (!isUltraSpace(level)) return;
 
         removeStructure(level);
 
@@ -181,7 +187,7 @@ public class UltraSpaceStructureManager {
 
         BlockPos basePos = new BlockPos(0, 64, 0);
         UltraSpaceState state = UltraSpaceState.getServerState(level);
-        state.structureBlocks.clear();
+        state.regions.clear();
 
         for (StructurePart part : config.parts) {
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath(UltraBeasts.MOD_ID, part.name);
@@ -189,77 +195,138 @@ public class UltraSpaceStructureManager {
 
             BlockPos startPos = basePos.offset(part.offset);
 
-            Vec3i sizeV = template.getSize();
-            BlockPos size = new BlockPos(sizeV.getX(), sizeV.getY(), sizeV.getZ());
-
+            Vec3i size = template.getSize();
             BlockPos endPos = startPos.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
 
-            for (BlockPos p : BlockPos.betweenClosed(startPos, endPos)) {
-                state.structureBlocks.add(p.immutable());
-            }
+            // One bounding box per part instead of one entry per block.
+            state.regions.add(new UltraSpaceState.Region(startPos, endPos));
 
             template.placeInWorld(level, startPos, startPos, new StructurePlaceSettings(), level.getRandom(), 2);
         }
 
+        state.setReturnPortalPos(config.returnPortalSpawn());
         state.setDirty();
 
         clearItems(level);
+        spawnReturnPortal(level, config.returnPortalSpawn());
         spawnUltraBeast(level, structureKey, config.pokemonSpawn);
     }
 
     /**
-     * Clears the structure area and any leftover Pokemon.
+     * Clears the structure area and any leftover entity.
      */
     public static void removeStructure(ServerLevel level) {
-        if (!level.dimension().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
+        if (!isUltraSpace(level)) return;
 
         UltraSpaceState state = UltraSpaceState.getServerState(level);
 
-        if (state.structureBlocks.isEmpty()) {
+        state.setReturnPortalPos(null);
+
+        if (state.regions.isEmpty()) {
             return;
         }
 
-        for (BlockPos pos : state.structureBlocks) {
-            level.setBlock(pos, Blocks.AIR.defaultBlockState(), 128);
-        }
+        // Mutable cursor: avoids allocating a BlockPos per cleared block.
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
-        List<Entity> toRemove = new ArrayList<>();
-        level.getAllEntities().forEach(entity -> {
-            if (entity != null && !(entity instanceof Player)) {
-                toRemove.add(entity);
+        for (UltraSpaceState.Region region : state.regions) {
+            BlockPos min = region.min();
+            BlockPos max = region.max();
+
+            for (int x = min.getX(); x <= max.getX(); x++) {
+                for (int y = min.getY(); y <= max.getY(); y++) {
+                    for (int z = min.getZ(); z <= max.getZ(); z++) {
+                        cursor.set(x, y, z);
+                        if (!level.getBlockState(cursor).isAir()) {
+                            level.setBlock(cursor, AIR, 128);
+                        }
+                    }
+                }
             }
-        });
-        for (Entity entity : toRemove) {
-            if (!entity.isRemoved()) entity.discard();
         }
 
-        state.structureBlocks.clear();
+        discardEntities(level, entity -> !(entity instanceof Player));
+
+        state.regions.clear();
         state.setDirty();
 
         UltraBeasts.LOGGER.info("Ultra-Space structure deleted.");
     }
 
     /**
+     * Puts the exit portal back if it went missing while a structure is still
+     * standing.
+     *
+     * Entities do not survive the server-start cleanup, and a chunk can unload
+     * with nobody nearby. Without this, a player reconnecting inside a closed
+     * structure such as kartana has no way out at all: those layouts do not
+     * expose the void, so falling out is not an option either.
+     */
+    public static void ensureReturnPortal(ServerLevel level) {
+        if (!isUltraSpace(level)) return;
+
+        UltraSpaceState state = UltraSpaceState.getServerState(level);
+        if (!state.hasStructure()) return;
+
+        BlockPos pos = state.getReturnPortalPos();
+        if (pos == null) return;
+
+        if (!level.getEntities(ModEntities.RETURN_WORMHOLE, e -> !e.isRemoved()).isEmpty()) {
+            return;
+        }
+
+        UltraBeasts.LOGGER.info("Exit portal was missing, restoring it at {}.", pos);
+        spawnReturnPortal(level, pos);
+    }
+
+    /**
+     * Spawns the exit portal, replacing any existing one.
+     */
+    public static void spawnReturnPortal(ServerLevel level, BlockPos pos) {
+        level.getEntities(ModEntities.RETURN_WORMHOLE, e -> true).forEach(Entity::discard);
+
+        ReturnWormholeEntity portal = new ReturnWormholeEntity(ModEntities.RETURN_WORMHOLE, level);
+        portal.setPos(pos.getX() + 0.5, pos.getY() + 2.0, pos.getZ() + 0.5);
+        level.addFreshEntity(portal);
+    }
+
+    /**
      * Safely removes every Pokemon from the dimension.
      */
     public static void killAllPokemonOfWorld(ServerLevel level) {
-        if (level == null || !level.dimension().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
+        if (level == null || !isUltraSpace(level)) return;
 
+        discardEntities(level, entity -> entity instanceof PokemonEntity);
+    }
+
+    private static boolean isUltraSpace(ServerLevel level) {
+        return level.dimension().equals(ModDimensions.ULTRA_SPACE_DIMENSION);
+    }
+
+    /**
+     * Collects first, then discards: mutating the entity list while iterating it
+     * is not safe.
+     */
+    private static void discardEntities(ServerLevel level, Predicate<Entity> filter) {
         List<Entity> targets = new ArrayList<>();
-        level.getAllEntities().forEach(e -> {
-            if (e instanceof PokemonEntity) {
-                targets.add(e);
-            }
-        });
 
-        for (Entity pokemon : targets) {
-            pokemon.discard();
+        for (Entity entity : level.getAllEntities()) {
+            if (entity != null && !entity.isRemoved() && filter.test(entity)) {
+                targets.add(entity);
+            }
+        }
+
+        for (Entity entity : targets) {
+            entity.discard();
         }
     }
 
     private static void spawnUltraBeast(ServerLevel level, String pokemon, BlockPos pos) {
         var species = PokemonSpecies.getByName(pokemon);
-        if (species == null) return;
+        if (species == null) {
+            UltraBeasts.LOGGER.warn("Unknown species '{}', no Ultra Beast spawned.", pokemon);
+            return;
+        }
 
         Pokemon ultraBeast = species.create(60);
         ultraBeast.sendOut(
@@ -284,18 +351,18 @@ public class UltraSpaceStructureManager {
         return keys.get(random.nextInt(keys.size()));
     }
 
+    /**
+     * Drops loose items left over from the previous instance.
+     *
+     * Deliberately does NOT touch the exit portal: it is spawned right after
+     * this call, and removing it here would race with that.
+     */
     private static void clearItems(ServerLevel level) {
-        if (!level.dimension().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) return;
+        if (!isUltraSpace(level)) return;
 
-        level.getServer().execute(() -> {
-            level.getEntities(ModEntities.RETURN_WORMHOLE, e -> e != null)
-                    .forEach(Entity::discard);
+        level.getEntities(EntityType.ITEM, e -> true).forEach(Entity::discard);
 
-            level.getEntities(EntityType.ITEM, item -> item != null)
-                    .forEach(Entity::discard);
-
-            UltraBeasts.LOGGER.info("Ultra-Space items cleared after structure placement.");
-        });
+        UltraBeasts.LOGGER.info("Ultra-Space items cleared after structure placement.");
     }
 
     public record StructurePart(String name, BlockPos offset) {}

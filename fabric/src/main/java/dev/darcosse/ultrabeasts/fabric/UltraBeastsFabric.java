@@ -2,7 +2,8 @@ package dev.darcosse.ultrabeasts.fabric;
 
 import dev.darcosse.ultrabeasts.UltraBeasts;
 import dev.darcosse.ultrabeasts.dimension.VoidChunkGenerator;
-import dev.darcosse.ultrabeasts.handler.FallingDamageHandler;
+import dev.darcosse.ultrabeasts.handler.UltraSpaceDamageHandler;
+import dev.darcosse.ultrabeasts.handler.UltraSpaceSession;
 import dev.darcosse.ultrabeasts.handler.UnbreakableBlocksHandler;
 import dev.darcosse.ultrabeasts.handler.VoidFallHandler;
 import dev.darcosse.ultrabeasts.registry.*;
@@ -86,8 +87,13 @@ public class UltraBeastsFabric implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(ModEvents::onServerStarted);
         ServerLifecycleEvents.SERVER_STOPPING.register(ModEvents::onServerStopping);
 
-        ServerPlayConnectionEvents.DISCONNECT.register(
-                (handler, server) -> VoidFallHandler.onPlayerDisconnect(handler.player));
+        ServerPlayConnectionEvents.JOIN.register(
+                (handler, sender, server) -> UltraSpaceSession.onPlayerJoin(handler.player));
+
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            UltraSpaceSession.onPlayerDisconnect(handler.player);
+            VoidFallHandler.onPlayerDisconnect(handler.player);
+        });
 
         PlayerBlockBreakEvents.BEFORE.register(
                 (world, player, pos, state, blockEntity) -> UnbreakableBlocksHandler.allowBlockBreak(world));
@@ -98,7 +104,7 @@ public class UltraBeastsFabric implements ModInitializer {
                         : InteractionResult.PASS);
 
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(
-                (entity, source, amount) -> FallingDamageHandler.allowDamage(entity, source));
+                (entity, source, amount) -> UltraSpaceDamageHandler.allowDamage(entity, source));
 
         UltraBeasts.LOGGER.info("Registering Handlers for " + UltraBeasts.MOD_ID);
     }

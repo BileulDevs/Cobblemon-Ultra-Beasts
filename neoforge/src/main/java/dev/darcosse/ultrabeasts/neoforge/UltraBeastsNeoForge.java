@@ -3,7 +3,8 @@ package dev.darcosse.ultrabeasts.neoforge;
 import com.mojang.serialization.MapCodec;
 import dev.darcosse.ultrabeasts.UltraBeasts;
 import dev.darcosse.ultrabeasts.dimension.VoidChunkGenerator;
-import dev.darcosse.ultrabeasts.handler.FallingDamageHandler;
+import dev.darcosse.ultrabeasts.handler.UltraSpaceDamageHandler;
+import dev.darcosse.ultrabeasts.handler.UltraSpaceSession;
 import dev.darcosse.ultrabeasts.handler.UnbreakableBlocksHandler;
 import dev.darcosse.ultrabeasts.handler.VoidFallHandler;
 import dev.darcosse.ultrabeasts.registry.ModCommands;
@@ -120,8 +121,16 @@ public class UltraBeastsNeoForge {
     }
 
     @SubscribeEvent
+    public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            UltraSpaceSession.onPlayerJoin(player);
+        }
+    }
+
+    @SubscribeEvent
     public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            UltraSpaceSession.onPlayerDisconnect(player);
             VoidFallHandler.onPlayerDisconnect(player);
         }
     }
@@ -143,7 +152,7 @@ public class UltraBeastsNeoForge {
 
     @SubscribeEvent
     public void onIncomingDamage(LivingIncomingDamageEvent event) {
-        if (!FallingDamageHandler.allowDamage(event.getEntity(), event.getSource())) {
+        if (!UltraSpaceDamageHandler.allowDamage(event.getEntity(), event.getSource())) {
             event.setCanceled(true);
         }
     }

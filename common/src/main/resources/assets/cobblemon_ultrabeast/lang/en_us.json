@@ -23,5 +23,8 @@
   "entity.cobblemon_ultrabeast.wormhole": "Wormhole",
   "entity.cobblemon_ultrabeast.wormhole_animation": "Ultra-Space Energy",
   "dimension.cobblemon_ultrabeast.ultra_space": "Ultra-Space",
-  "biome.cobblemon_ultrabeast.ultra_void": "Ultra-Void"
+  "biome.cobblemon_ultrabeast.ultra_void": "Ultra-Void",
+  "message.ultrabeasts.occupied": "§cThe Ultra-Space is already occupied.",
+  "message.ultrabeasts.evicted": "§5The Ultra-Space moved on without you..",
+  "command.ultrabeasts.wormhole.spawn.occupied": "A player already holds the Ultra-Space. Wait for them to leave."
 }

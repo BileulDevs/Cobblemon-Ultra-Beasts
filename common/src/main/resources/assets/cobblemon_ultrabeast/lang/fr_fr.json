@@ -23,5 +23,8 @@
   "entity.cobblemon_ultrabeast.wormhole": "Trou de Ver",
   "entity.cobblemon_ultrabeast.wormhole_animation": "Énergie de l'Ultra-Espace",
   "dimension.cobblemon_ultrabeast.ultra_space": "Ultra-Space",
-  "biome.cobblemon_ultrabeast.ultra_void": "Ultra-Vide"
+  "biome.cobblemon_ultrabeast.ultra_void": "Ultra-Vide",
+  "message.ultrabeasts.occupied": "§cL'Ultra-Espace est déjà occupé.",
+  "message.ultrabeasts.evicted": "§5L'Ultra-Espace a continué sans vous..",
+  "command.ultrabeasts.wormhole.spawn.occupied": "Un joueur occupe déjà l'Ultra-Espace. Attendez qu'il en sorte."
 }

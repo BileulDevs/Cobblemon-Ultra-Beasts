@@ -1,8 +1,8 @@
 package dev.darcosse.ultrabeasts.entity;
 
+import com.mojang.math.Transformation;
 import dev.darcosse.ultrabeasts.registry.ModEntities;
 import dev.darcosse.ultrabeasts.registry.ModSounds;
-import com.mojang.math.Transformation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -33,6 +33,25 @@ public class WormholeSpawnAnimation extends Entity {
     private static final int MAX_FLYING_BLOCKS = 80;
     public static final String BLOCK_TAG = "wormhole_animation_block";
 
+    /**
+     * Transformations are only pushed every N ticks, with the interpolation
+     * duration set to the same N so the client fills in the gap.
+     *
+     * Updating 80 display entities every tick meant 80 entity-data syncs per
+     * tick to every nearby player. At 3 the traffic drops by two thirds and the
+     * motion actually looks smoother, because the client interpolates instead
+     * of snapping to each new value.
+     */
+    private static final int TRANSFORM_UPDATE_INTERVAL = 3;
+
+    private static final List<BlockState> DEBRIS_STATES = List.of(
+            Blocks.STONE.defaultBlockState(),
+            Blocks.DIRT.defaultBlockState(),
+            Blocks.GRASS_BLOCK.defaultBlockState(),
+            Blocks.SAND.defaultBlockState(),
+            Blocks.COBBLESTONE.defaultBlockState()
+    );
+
     private int animationTick = 0;
     private BlockPos targetPos = BlockPos.ZERO;
     private boolean blocksSpawned = false;
@@ -55,64 +74,54 @@ public class WormholeSpawnAnimation extends Entity {
     public void tick() {
         super.tick();
 
-        if (this.level().isClientSide) return;
+        if (!(this.level() instanceof ServerLevel level)) return;
 
         animationTick++;
 
         if (animationTick <= DESCENT_DURATION) {
-            handleDescent();
+            handleDescent(level);
         } else if (animationTick <= TOTAL_DURATION) {
             if (!blocksSpawned) {
-                spawnFlyingBlocks();
+                spawnFlyingBlocks(level);
                 blocksSpawned = true;
-                this.level().playSound(null, targetPos, SoundEvents.BEACON_ACTIVATE, SoundSource.HOSTILE, 4.0f, 1.0f);
+                level.playSound(null, targetPos, SoundEvents.BEACON_ACTIVATE, SoundSource.HOSTILE, 4.0f, 1.0f);
             }
-            animateFlyingBlocks();
+            animateFlyingBlocks(level);
         } else if (!finalEntitySpawned) {
-            cleanupBlocks();
-            spawnFinalWormhole();
+            cleanupBlocks(level);
+            spawnFinalWormhole(level);
         }
     }
 
     /**
      * Phase 1: the invisible entity descends, trailing opaque smoke.
      */
-    private void handleDescent() {
+    private void handleDescent(ServerLevel level) {
         double progress = (double) animationTick / DESCENT_DURATION;
-        double startY = targetPos.getY() + 20;
-        double y = startY - (progress * 20);
+        double y = (targetPos.getY() + 20) - (progress * 20);
 
         this.setPos(targetPos.getX() + 0.5, y, targetPos.getZ() + 0.5);
 
-        if (this.level() instanceof ServerLevel sw) {
-            sw.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, this.getX(), this.getY(), this.getZ(), 6, 0.05, 0.05, 0.05, 0.01);
-            sw.sendParticles(ParticleTypes.LARGE_SMOKE, this.getX(), this.getY(), this.getZ(), 2, 0.1, 0.1, 0.1, 0.02);
-            sw.sendParticles(ParticleTypes.FLAME, this.getX(), this.getY(), this.getZ(), 1, 0.1, 0.1, 0.1, 0.05);
-        }
+        double x = this.getX();
+        double z = this.getZ();
+
+        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, y, z, 6, 0.05, 0.05, 0.05, 0.01);
+        level.sendParticles(ParticleTypes.LARGE_SMOKE, x, y, z, 2, 0.1, 0.1, 0.1, 0.02);
+        level.sendParticles(ParticleTypes.FLAME, x, y, z, 1, 0.1, 0.1, 0.1, 0.05);
     }
 
     /**
-     * Phase 2 (setup): spawn the surrounding blocks.
+     * Phase 2 (setup): spawn the surrounding debris.
      */
-    private void spawnFlyingBlocks() {
-        if (!(this.level() instanceof ServerLevel sw)) return;
-
-        List<BlockState> states = List.of(
-                Blocks.STONE.defaultBlockState(),
-                Blocks.DIRT.defaultBlockState(),
-                Blocks.GRASS_BLOCK.defaultBlockState(),
-                Blocks.SAND.defaultBlockState(),
-                Blocks.COBBLESTONE.defaultBlockState()
-        );
-
+    private void spawnFlyingBlocks(ServerLevel level) {
         for (int i = 0; i < MAX_FLYING_BLOCKS; i++) {
             double angle = this.random.nextDouble() * Math.PI * 2;
             double radius = 12 + this.random.nextDouble() * 15;
             double height = this.random.nextDouble() * 10 - 5;
 
-            Display.BlockDisplay display = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, sw);
+            Display.BlockDisplay display = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, level);
             display.addTag(BLOCK_TAG);
-            display.setBlockState(states.get(this.random.nextInt(states.size())));
+            display.setBlockState(DEBRIS_STATES.get(this.random.nextInt(DEBRIS_STATES.size())));
 
             display.setPos(
                     targetPos.getX() + 0.5 + Math.cos(angle) * radius,
@@ -123,85 +132,98 @@ public class WormholeSpawnAnimation extends Entity {
             display.setNoGravity(true);
             display.setInvulnerable(true);
 
-            float s = 0.4f + this.random.nextFloat() * 0.4f;
-            display.setTransformation(new Transformation(null, null, new Vector3f(s, s, s), null));
+            // Set once here; from now on the client interpolates between updates.
+            display.setTransformationInterpolationDuration(TRANSFORM_UPDATE_INTERVAL);
+            display.setTransformationInterpolationDelay(0);
 
-            sw.addFreshEntity(display);
+            float scale = 0.4f + this.random.nextFloat() * 0.4f;
+            display.setTransformation(new Transformation(null, null, new Vector3f(scale, scale, scale), null));
+
+            level.addFreshEntity(display);
             flyingBlocks.add(display);
         }
     }
 
     /**
-     * Phases 2 and 3: suck the blocks toward the centre.
+     * Phases 2 and 3: suck the debris toward the centre.
      */
-    private void animateFlyingBlocks() {
+    private void animateFlyingBlocks(ServerLevel level) {
         Vec3 center = new Vec3(targetPos.getX() + 0.5, targetPos.getY() + 1.5, targetPos.getZ() + 0.5);
 
-        int currentAbsorbTick = animationTick - DESCENT_DURATION;
-        int totalAbsorbDuration = BLOCK_COLLECTION_DURATION + ABSORPTION_DURATION;
-        double absorbProgress = Math.min(1.0, (double) currentAbsorbTick / totalAbsorbDuration);
+        int absorbTick = animationTick - DESCENT_DURATION;
+        int absorbDuration = BLOCK_COLLECTION_DURATION + ABSORPTION_DURATION;
+        double absorbProgress = Math.min(1.0, (double) absorbTick / absorbDuration);
 
-        if (flyingBlocks.isEmpty() && this.level() instanceof ServerLevel sw) {
-            sw.getEntities(EntityType.BLOCK_DISPLAY, e -> e.getTags().contains(BLOCK_TAG))
+        // Recovered after a reload: the entity list does not survive, the tagged
+        // displays do.
+        if (flyingBlocks.isEmpty()) {
+            level.getEntities(EntityType.BLOCK_DISPLAY, e -> e.getTags().contains(BLOCK_TAG))
                     .forEach(flyingBlocks::add);
         }
+
+        boolean pushTransform = animationTick % TRANSFORM_UPDATE_INTERVAL == 0;
+
+        double pullStrength = 0.05 + (absorbProgress * 0.35);
+        double tangentStrength = 0.25 * (1.0 - absorbProgress);
+        float scale = (float) (0.6f * (1.0 - (absorbProgress * 0.9)));
 
         for (Display.BlockDisplay block : flyingBlocks) {
             if (block.isRemoved()) continue;
 
             Vec3 currentPos = block.position();
             Vec3 toCenter = center.subtract(currentPos);
-            double distance = toCenter.length();
 
-            double pullStrength = 0.05 + (absorbProgress * 0.35);
-
-            Vec3 tangent = toCenter.cross(new Vec3(0, 1, 0)).normalize().scale(0.25 * (1.0 - absorbProgress));
-
+            Vec3 tangent = toCenter.cross(new Vec3(0, 1, 0)).normalize().scale(tangentStrength);
             Vec3 nextPos = currentPos.add(toCenter.scale(pullStrength)).add(tangent);
+
+            // Position every tick: ordinary movement packets, and this is what
+            // keeps the debris looking like it flows rather than teleports.
             block.setPos(nextPos.x, nextPos.y, nextPos.z);
 
-            long seed = block.getUUID().getMostSignificantBits();
-            float rotSpeed = 0.1f + ((seed % 100) / 500f);
-            Quaternionf quat = new Quaternionf().rotateXYZ(animationTick * rotSpeed, animationTick * (rotSpeed * 1.2f), animationTick * (rotSpeed * 0.8f));
+            if (pushTransform) {
+                long seed = block.getUUID().getMostSignificantBits();
+                float rotSpeed = 0.1f + ((seed % 100) / 500f);
 
-            float currentScale = (float) (0.6f * (1.0 - (absorbProgress * 0.9)));
+                Quaternionf rotation = new Quaternionf().rotateXYZ(
+                        animationTick * rotSpeed,
+                        animationTick * rotSpeed * 1.2f,
+                        animationTick * rotSpeed * 0.8f);
 
-            block.setTransformationInterpolationDuration(1);
-            block.setTransformationInterpolationDelay(0);
-            block.setTransformation(new Transformation(null, quat, new Vector3f(currentScale, currentScale, currentScale), null));
+                block.setTransformation(
+                        new Transformation(null, rotation, new Vector3f(scale, scale, scale), null));
+            }
         }
 
-        if (this.level() instanceof ServerLevel sw) {
-            sw.sendParticles(ParticleTypes.ENCHANT, center.x, center.y, center.z, 8, 1.2, 1.2, 1.2, 0.1);
+        level.sendParticles(ParticleTypes.ENCHANT, center.x, center.y, center.z, 8, 1.2, 1.2, 1.2, 0.1);
 
-            if (animationTick % 2 == 0) {
-                sw.sendParticles(ParticleTypes.SQUID_INK, center.x, center.y, center.z, (int) (5 + (absorbProgress * 15)), 0.1, 0.1, 0.1, 0.02);
-            }
+        if (animationTick % 2 == 0) {
+            level.sendParticles(ParticleTypes.SQUID_INK, center.x, center.y, center.z,
+                    (int) (5 + (absorbProgress * 15)), 0.1, 0.1, 0.1, 0.02);
         }
     }
 
-    private void cleanupBlocks() {
-        if (!(this.level() instanceof ServerLevel sw)) return;
-
+    private void cleanupBlocks(ServerLevel level) {
         flyingBlocks.forEach(Entity::discard);
         flyingBlocks.clear();
 
-        sw.getEntities(EntityType.BLOCK_DISPLAY, e -> e.getTags().contains(BLOCK_TAG))
+        level.getEntities(EntityType.BLOCK_DISPLAY, e -> e.getTags().contains(BLOCK_TAG))
                 .forEach(Entity::discard);
 
-        sw.sendParticles(ParticleTypes.FLASH, targetPos.getX() + 0.5, targetPos.getY() + 1.5, targetPos.getZ() + 0.5, 1, 0, 0, 0, 0);
+        level.sendParticles(ParticleTypes.FLASH,
+                targetPos.getX() + 0.5, targetPos.getY() + 1.5, targetPos.getZ() + 0.5,
+                1, 0, 0, 0, 0);
     }
 
-    private void spawnFinalWormhole() {
+    private void spawnFinalWormhole(ServerLevel level) {
         finalEntitySpawned = true;
-        if (this.level() instanceof ServerLevel sw) {
-            WormholeEntity wormhole = new WormholeEntity(ModEntities.WORMHOLE, sw);
-            wormhole.setPos(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5);
-            sw.addFreshEntity(wormhole);
-            WormholeEntity.setActiveWormhole(wormhole, sw.getGameTime());
 
-            sw.playSound(null, targetPos, ModSounds.WORMHOLE_SPAWN, SoundSource.HOSTILE, 3.0f, 0.8f);
-        }
+        WormholeEntity wormhole = new WormholeEntity(ModEntities.WORMHOLE, level);
+        wormhole.setPos(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5);
+        wormhole.setPlacementTime(level.getGameTime());
+        level.addFreshEntity(wormhole);
+
+        level.playSound(null, targetPos, ModSounds.WORMHOLE_SPAWN, SoundSource.HOSTILE, 3.0f, 0.8f);
+
         this.discard();
     }
 

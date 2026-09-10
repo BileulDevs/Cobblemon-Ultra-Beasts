@@ -17,6 +17,10 @@ import net.minecraft.world.level.Level;
 
 public class ReturnWormholeEntity extends Entity {
 
+    /** See WormholeEntity.summonPortal: one packet per particle. */
+    private static final int PARTICLES_PER_TICK = 18;
+    private static final double PORTAL_RADIUS = 2.0;
+
     public ReturnWormholeEntity(EntityType<? extends ReturnWormholeEntity> type, Level level) {
         super(type, level);
         this.noPhysics = true;
@@ -30,36 +34,27 @@ public class ReturnWormholeEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-        if (!this.level().isClientSide) {
-            summonPortal();
+
+        if (this.level() instanceof ServerLevel level) {
+            summonPortal(level);
         }
     }
 
-    private void summonPortal() {
-        if (!(this.level() instanceof ServerLevel level)) return;
-
-        int numberOfParticles = 50;
-
-        double radius = 2;
-
+    private void summonPortal(ServerLevel level) {
         double centerX = this.getX();
         double centerY = this.getY();
         double centerZ = this.getZ() - 1;
 
-        for (int i = 0; i < numberOfParticles; i++) {
+        for (int i = 0; i < PARTICLES_PER_TICK; i++) {
             double angle = level.random.nextDouble() * 2 * Math.PI;
-
-            double startX = centerX + Math.cos(angle) * radius;
-            double startY = centerY + Math.sin(angle) * radius;
-            double startZ = centerZ;
 
             level.sendParticles(
                     ModParticles.RETURN_WORMHOLE,
-                    startX, startY, startZ,
-                    0,
-                    centerX,
-                    centerY,
+                    centerX + Math.cos(angle) * PORTAL_RADIUS,
+                    centerY + Math.sin(angle) * PORTAL_RADIUS,
                     centerZ,
+                    0,
+                    centerX, centerY, centerZ,
                     0.0
             );
         }
@@ -67,11 +62,12 @@ public class ReturnWormholeEntity extends Entity {
 
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
-        if (!this.level().isClientSide && player instanceof ServerPlayer serverPlayer) {
-            teleportBack(serverPlayer);
-            return InteractionResult.SUCCESS;
+        if (this.level().isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
+            return InteractionResult.PASS;
         }
-        return InteractionResult.PASS;
+
+        teleportBack(serverPlayer);
+        return InteractionResult.SUCCESS;
     }
 
     @Override
