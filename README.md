@@ -4,6 +4,12 @@ Rare wormholes tear open in the overworld. Step through one and you land in **Ul
 
 Runs on **Fabric** and **NeoForge**, Minecraft **1.21.1**, Cobblemon **1.8.0**.
 
+[![CurseForge](https://img.shields.io/curseforge/dt/1333072?logo=curseforge&label=Downloads&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/cobblemon-ultra-beasts)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green?logo=minecraft)](https://www.minecraft.net)
+[![Fabric](https://img.shields.io/badge/Fabric-supported-dbb37d?logo=fabric)](https://fabricmc.net)
+[![NeoForge](https://img.shields.io/badge/NeoForge-supported-e04e14)](https://neoforged.net)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ---
 
 ## How it works
