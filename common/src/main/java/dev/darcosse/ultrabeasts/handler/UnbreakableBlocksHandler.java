@@ -8,16 +8,28 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.InteractionHand;
 
 /**
- * Loader-independent logic. Each platform module wires the two predicates.
+ * Keeps Ultra-Space structures intact: blocks cannot be broken or placed there.
+ * <p>
+ * Loader-independent predicates; each loader module wires them to its own events. Server
+ * side only.
  */
-public class UnbreakableBlocksHandler {
+public final class UnbreakableBlocksHandler {
 
-    /** @return true when the block break should be allowed. */
+    /** Static predicates only, never instantiated. */
+    private UnbreakableBlocksHandler() {
+    }
+
+    /** @return true when breaking a block in this level is allowed */
     public static boolean allowBlockBreak(Level level) {
         return !level.dimension().equals(ModDimensions.ULTRA_SPACE_DIMENSION);
     }
 
-    /** @return true when the right click should be cancelled. */
+    /**
+     * Blocks placement only: a right click with anything but a block item still goes through,
+     * so doors, levers and Poké Balls keep working inside the structures.
+     *
+     * @return true when the right click should be cancelled
+     */
     public static boolean shouldCancelUseBlock(Player player, Level level, InteractionHand hand) {
         if (!level.dimension().equals(ModDimensions.ULTRA_SPACE_DIMENSION)) {
             return false;

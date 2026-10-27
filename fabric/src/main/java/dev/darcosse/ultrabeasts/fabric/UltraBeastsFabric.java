@@ -20,12 +20,21 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionResult;
 
+/**
+ * Fabric entry point: registers the mod's content in vanilla registries, starts the common
+ * code, and wires its handlers to Fabric API events. Runs on both sides.
+ */
 public class UltraBeastsFabric implements ModInitializer {
 
+    /** Builds an identifier in the mod's namespace. */
     private static ResourceLocation id(String path) {
         return ResourceLocation.fromNamespaceAndPath(UltraBeasts.MOD_ID, path);
     }
 
+    /**
+     * Content is registered before {@code UltraBeasts.init}, so the static fields the common
+     * code reads are filled by the time it starts.
+     */
     @Override
     public void onInitialize() {
         registerParticles();
@@ -38,6 +47,7 @@ public class UltraBeastsFabric implements ModInitializer {
         registerEvents();
     }
 
+    /** Registers the particle types and publishes them in {@link ModParticles}. */
     private void registerParticles() {
         ModParticles.WORMHOLE = Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 id(ModParticles.WORMHOLE_ID), ModParticles.create());
@@ -46,17 +56,19 @@ public class UltraBeastsFabric implements ModInitializer {
         ModParticles.SPARK = Registry.register(BuiltInRegistries.PARTICLE_TYPE,
                 id(ModParticles.SPARK_ID), ModParticles.create());
 
-        UltraBeasts.LOGGER.info("Registering Particles for " + UltraBeasts.MOD_ID);
+        UltraBeasts.LOGGER.info("Registering Particles for {}", UltraBeasts.MOD_ID);
     }
 
+    /** Registers the sound events declared in {@link ModSounds}. */
     private void registerSounds() {
         Registry.register(BuiltInRegistries.SOUND_EVENT, ModSounds.WORMHOLE_SPAWN_ID, ModSounds.WORMHOLE_SPAWN);
         Registry.register(BuiltInRegistries.SOUND_EVENT, ModSounds.WORMHOLE_ANIMATION_SPAWN_ID, ModSounds.WORMHOLE_ANIMATION_SPAWN);
         Registry.register(BuiltInRegistries.SOUND_EVENT, ModSounds.WORMHOLE_AMBIENT_ID, ModSounds.WORMHOLE_AMBIENT);
 
-        UltraBeasts.LOGGER.info("Registering Sound Events for " + UltraBeasts.MOD_ID);
+        UltraBeasts.LOGGER.info("Registering Sound Events for {}", UltraBeasts.MOD_ID);
     }
 
+    /** Registers the entity types and publishes them in {@link ModEntities}. */
     private void registerEntities() {
         ModEntities.WORMHOLE = Registry.register(BuiltInRegistries.ENTITY_TYPE,
                 id(ModEntities.WORMHOLE_ID), ModEntities.createWormhole());
@@ -65,16 +77,18 @@ public class UltraBeastsFabric implements ModInitializer {
         ModEntities.RETURN_WORMHOLE = Registry.register(BuiltInRegistries.ENTITY_TYPE,
                 id(ModEntities.RETURN_WORMHOLE_ID), ModEntities.createReturnWormhole());
 
-        UltraBeasts.LOGGER.info("Registering Entities for " + UltraBeasts.MOD_ID);
+        UltraBeasts.LOGGER.info("Registering Entities for {}", UltraBeasts.MOD_ID);
     }
 
+    /** Registers the void chunk generator referenced by the dimension JSON. */
     private void registerChunkGenerator() {
         Registry.register(BuiltInRegistries.CHUNK_GENERATOR,
                 id("void_generator"), VoidChunkGenerator.CODEC);
 
-        UltraBeasts.LOGGER.info("Registering Generators for " + UltraBeasts.MOD_ID);
+        UltraBeasts.LOGGER.info("Registering Generators for {}", UltraBeasts.MOD_ID);
     }
 
+    /** Connects the loader-independent handlers to Fabric API events. */
     private void registerEvents() {
         CommandRegistrationCallback.EVENT.register(
                 (dispatcher, registryAccess, environment) -> ModCommands.register(dispatcher));
@@ -106,6 +120,6 @@ public class UltraBeastsFabric implements ModInitializer {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(
                 (entity, source, amount) -> UltraSpaceDamageHandler.allowDamage(entity, source));
 
-        UltraBeasts.LOGGER.info("Registering Handlers for " + UltraBeasts.MOD_ID);
+        UltraBeasts.LOGGER.info("Registering Handlers for {}", UltraBeasts.MOD_ID);
     }
 }

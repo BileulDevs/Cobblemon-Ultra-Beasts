@@ -8,6 +8,8 @@ import net.minecraft.core.particles.SimpleParticleType;
  * constructor they can call directly.
  */
 public class ModParticleType extends SimpleParticleType {
+
+    /** @param overrideLimiter true to ignore the player's particle quality setting */
     public ModParticleType(boolean overrideLimiter) {
         super(overrideLimiter);
     }

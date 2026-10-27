@@ -2,9 +2,12 @@ package dev.darcosse.ultrabeasts.platform;
 
 import java.nio.file.Path;
 
-/** Everything the common code cannot do on its own. */
+/**
+ * Loader services the common code cannot obtain on its own. Implemented once per loader
+ * module and installed through {@link Platform#set(PlatformAdapter)}.
+ */
 public interface PlatformAdapter {
 
-    /** The game's config directory. */
+    /** Returns the game's root config directory, as defined by the running loader. */
     Path getConfigDir();
 }

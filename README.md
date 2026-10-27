@@ -2,7 +2,7 @@
 
 Rare wormholes tear open in the overworld. Step through one and you land in **Ultra-Space**, a void dimension where a single Ultra Beast waits inside a structure built for it. Catch it, or leave empty-handed — either way the wormhole is gone when you get back.
 
-Runs on **Fabric** and **NeoForge**, Minecraft **1.21.1**, Cobblemon **1.8.0**.
+Runs on **Fabric** and **NeoForge**, Minecraft **1.21.1**, Cobblemon **1.8.4**.
 
 [![CurseForge](https://img.shields.io/curseforge/dt/1333072?logo=curseforge&label=Downloads&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/cobblemon-ultra-beasts)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green?logo=minecraft)](https://www.minecraft.net)
@@ -70,7 +70,7 @@ The second one tracks each species separately, so it fills in as you go.
 
 ## Configuration
 
-A file is created at `config/ultrabeasts.json` on first launch:
+A file is created at `config/cobblemon_ultrabeast/main.json` on first launch:
 
 ```json
 {
@@ -87,11 +87,13 @@ Want to test? Set the chance to `1` and reload; you'll get a wormhole on the nex
 
 Run `/ultrabeasts reload` to apply changes without a restart.
 
+Coming from 4.0 or earlier? Your old `config/ultrabeasts.json` is moved to the new location automatically on first launch, and renamed to `ultrabeasts.json.migrated`.
+
 ---
 
 ## Installation
 
-1. Install Cobblemon 1.8.0 for Minecraft 1.21.1.
+1. Install Cobblemon 1.8.4 or later for Minecraft 1.21.1.
 2. Install the Kotlin bridge for your loader — Fabric Language Kotlin on Fabric, Kotlin for Forge on NeoForge. Cobblemon needs it.
 3. Drop the Ultra-Beasts jar matching your loader into `mods/`.
 4. Launch.
@@ -101,7 +103,7 @@ Run `/ultrabeasts reload` to apply changes without a restart.
 | | Fabric | NeoForge |
 |---|---|---|
 | Minecraft | 1.21.1 | 1.21.1 |
-| Cobblemon | 1.8.0 | 1.8.0 |
+| Cobblemon | 1.8.4+ | 1.8.4+ |
 | Also required | Fabric API, Fabric Language Kotlin | Kotlin for Forge |
 
 ### A note on the world warning
@@ -132,4 +134,4 @@ Standard Architectury multiloader layout: shared code in `common/`, loader-speci
 
 ## Issues
 
-Bug reports and suggestions go to the [issue tracker](https://github.com/BileulDevs/Cobblemon-Ultra-Beasts/issues). Please include your loader, your `config/ultrabeasts.json`, and the server log rather than just the client one — most of this mod runs server-side.
+Bug reports and suggestions go to the [issue tracker](https://github.com/BileulDevs/Cobblemon-Ultra-Beasts/issues). Please include your loader, your `config/cobblemon_ultrabeast/main.json`, and the server log rather than just the client one — most of this mod runs server-side.

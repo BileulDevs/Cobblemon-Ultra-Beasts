@@ -5,7 +5,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 
 /**
- * Sound event definitions. Registration is done by each loader.
+ * Sound event definitions shared by both loaders, which register them under these ids. The
+ * ids must match the entries of {@code assets/cobblemon_ultrabeast/sounds.json}.
  */
 public final class ModSounds {
 
@@ -23,6 +24,7 @@ public final class ModSounds {
     public static final SoundEvent WORMHOLE_AMBIENT =
             SoundEvent.createVariableRangeEvent(WORMHOLE_AMBIENT_ID);
 
+    /** Definitions only, never instantiated. */
     private ModSounds() {
     }
 }

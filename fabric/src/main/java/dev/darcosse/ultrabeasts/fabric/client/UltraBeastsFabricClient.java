@@ -10,8 +10,10 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 
+/** Fabric client entry point: registers entity renderers and particle providers. */
 public class UltraBeastsFabricClient implements ClientModInitializer {
 
+    /** Runs after the common initializer, so the entity and particle types are registered. */
     @Override
     public void onInitializeClient() {
         EntityRendererRegistry.register(ModEntities.WORMHOLE, WormholeRenderer::new);

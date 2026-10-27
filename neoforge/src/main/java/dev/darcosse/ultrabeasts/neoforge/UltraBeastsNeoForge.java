@@ -33,6 +33,10 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
+/**
+ * NeoForge entry point: registers the mod's content through deferred registers, starts the
+ * common code, and wires its handlers to NeoForge events. Runs on both sides.
+ */
 @Mod(UltraBeasts.MOD_ID)
 public class UltraBeastsNeoForge {
 
@@ -64,7 +68,7 @@ public class UltraBeastsNeoForge {
     public static final DeferredHolder<net.minecraft.core.particles.ParticleType<?>, SimpleParticleType>
             P_SPARK = PARTICLES.register(ModParticles.SPARK_ID, ModParticles::create);
 
-    // Sounds
+    // Sounds. Ids must match ModSounds and sounds.json.
     private static final DeferredHolder<SoundEvent, SoundEvent> S_SPAWN =
             SOUNDS.register("wormhole_spawn", () -> ModSounds.WORMHOLE_SPAWN);
     private static final DeferredHolder<SoundEvent, SoundEvent> S_ANIM_SPAWN =
@@ -76,6 +80,7 @@ public class UltraBeastsNeoForge {
     private static final DeferredHolder<MapCodec<? extends ChunkGenerator>, MapCodec<VoidChunkGenerator>>
             VOID_GENERATOR = CHUNK_GENERATORS.register("void_generator", () -> VoidChunkGenerator.CODEC);
 
+    /** Called by NeoForge with the mod's event bus. */
     public UltraBeastsNeoForge(IEventBus modEventBus) {
         ENTITIES.register(modEventBus);
         PARTICLES.register(modEventBus);
@@ -99,27 +104,32 @@ public class UltraBeastsNeoForge {
         NeoForge.EVENT_BUS.register(this);
     }
 
+    /** Registers {@code /ultrabeasts}. */
     @SubscribeEvent
     public void onCommandRegistration(RegisterCommandsEvent event) {
         ModCommands.register(event.getDispatcher());
     }
 
+    /** Per-tick server work, after the vanilla tick (Post) like Fabric's END_SERVER_TICK. */
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
         ModEvents.onServerTick(event.getServer());
         VoidFallHandler.onServerTick(event.getServer());
     }
 
+    /** Clean-up of the previous session's entities. */
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         ModEvents.onServerStarted(event.getServer());
     }
 
+    /** Clean-up before the world is saved. */
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         ModEvents.onServerStopping(event.getServer());
     }
 
+    /** Resumes or ends the Ultra-Space session of a player logging in there. */
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
@@ -127,6 +137,7 @@ public class UltraBeastsNeoForge {
         }
     }
 
+    /** Starts the occupant's grace period and forgets their void-fall state. */
     @SubscribeEvent
     public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
@@ -135,6 +146,7 @@ public class UltraBeastsNeoForge {
         }
     }
 
+    /** Cancels block breaking in Ultra-Space. */
     @SubscribeEvent
     public void onBlockBreak(BlockEvent.BreakEvent event) {
         if (!UnbreakableBlocksHandler.allowBlockBreak(event.getPlayer().level())) {
@@ -142,6 +154,7 @@ public class UltraBeastsNeoForge {
         }
     }
 
+    /** Cancels block placement in Ultra-Space. */
     @SubscribeEvent
     public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (UnbreakableBlocksHandler.shouldCancelUseBlock(
@@ -150,6 +163,7 @@ public class UltraBeastsNeoForge {
         }
     }
 
+    /** Cancels all damage to players in Ultra-Space. */
     @SubscribeEvent
     public void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (!UltraSpaceDamageHandler.allowDamage(event.getEntity(), event.getSource())) {

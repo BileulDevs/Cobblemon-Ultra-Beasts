@@ -22,8 +22,8 @@ dependencies {
     mappings(loom.officialMojangMappings())
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")
 
-    // API complete : ce mod utilise commands, lifecycle, player events,
-    // entity events, networking, particles, rendering et object-builder.
+    // Full API: the mod uses commands, lifecycle, player events, entity events,
+    // networking, particles, rendering and object-builder.
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
 
     // needed for development launch targets to work
