@@ -11,17 +11,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
+import dev.darcosse.ultrabeasts.util.TeleportEffects;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Owns the "one player at a time" rule.
- *
- * Every path in and out of Ultra-Space goes through here, so the rule is one
- * readable place instead of a property that emerges from scattered checks.
+ * Owns the "one player at a time" rule of Ultra-Space.
+ * <p>
+ * Every path in and out of the dimension goes through here, so the rule lives in one
+ * readable place instead of emerging from scattered checks. The claim itself is persisted
+ * in {@link UltraSpaceState}. Server side only.
  */
 public final class UltraSpaceSession {
 
@@ -38,28 +38,32 @@ public final class UltraSpaceSession {
     /** Ticks to wait before evicting on login, so the client finishes loading. */
     private static final int EVICTION_DELAY = 20;
 
+    /** Static handlers only, never instantiated. */
     private UltraSpaceSession() {
     }
 
+    /**
+     * The single clock every lease check reads. Mixing the overworld's and Ultra-Space's game
+     * time would let two checks disagree on whether a lease has expired.
+     */
     private static long gameTime(MinecraftServer server) {
-        // One clock for every check: the overworld's.
         return server.overworld().getGameTime();
     }
 
+    /** Returns the persisted session state, or null if the dimension is not loaded. */
     private static UltraSpaceState state(MinecraftServer server) {
         ServerLevel ultraSpace = server.getLevel(ModDimensions.ULTRA_SPACE_DIMENSION);
         return ultraSpace == null ? null : UltraSpaceState.getServerState(ultraSpace);
     }
 
+    /** Whether the player is currently standing in Ultra-Space. */
     public static boolean isInUltraSpace(ServerPlayer player) {
         return player.level().dimension().equals(ModDimensions.ULTRA_SPACE_DIMENSION);
     }
 
     /**
-     * Can this player enter right now?
-     *
-     * True when the dimension is free, when the lease has expired, or when the
-     * player already holds it.
+     * Whether this player may enter right now: the dimension is free, its lease has expired,
+     * or the player already holds it.
      */
     public static boolean canEnter(ServerPlayer player) {
         UltraSpaceState state = state(player.getServer());
@@ -71,13 +75,13 @@ public final class UltraSpaceSession {
         return occupant == null || occupant.equals(player.getUUID());
     }
 
-    /** Is anyone holding the dimension? Used to hold back wormhole spawns. */
+    /** Whether anyone, online or within their grace period, holds the dimension. Holds back wormhole spawns. */
     public static boolean isOccupied(MinecraftServer server) {
         UltraSpaceState state = state(server);
         return state != null && state.isClaimed(gameTime(server));
     }
 
-    /** Called once the player is actually being sent in. */
+    /** Gives the dimension to the player. Called once they are actually being sent in. */
     public static void claim(ServerPlayer player) {
         UltraSpaceState state = state(player.getServer());
         if (state != null) {
@@ -85,7 +89,7 @@ public final class UltraSpaceSession {
         }
     }
 
-    /** Called on every way out: portal, void, or eviction. */
+    /** Frees the dimension. Called on every way out: portal, void, or operator clear. */
     public static void release(MinecraftServer server) {
         UltraSpaceState state = state(server);
         if (state != null) {
@@ -94,8 +98,8 @@ public final class UltraSpaceSession {
     }
 
     /**
-     * The occupant logged out: start the countdown rather than freeing the slot
-     * immediately, so a crash does not cost them their wormhole.
+     * Starts the grace countdown when the occupant logs out, rather than freeing the slot
+     * immediately, so a crash does not cost them their Ultra Beast.
      */
     public static void onPlayerDisconnect(ServerPlayer player) {
         if (!isInUltraSpace(player)) return;
@@ -113,8 +117,8 @@ public final class UltraSpaceSession {
     }
 
     /**
-     * Either resumes the session, or throws the player out if the dimension
-     * changed hands while they were away.
+     * On login inside Ultra-Space: resumes the session if the player still holds it, or
+     * sends them home if the dimension changed hands while they were away.
      */
     public static void onPlayerJoin(ServerPlayer player) {
         if (!isInUltraSpace(player)) return;
@@ -133,21 +137,19 @@ public final class UltraSpaceSession {
             return;
         }
 
-        // Someone else holds it, or the lease lapsed and the structure was
-        // replaced. Either way this player no longer belongs here.
-        // Deferred: teleporting while the client is still loading the world
+        // Someone else holds it, or the lease lapsed. Either way this player no longer
+        // belongs here. Deferred: teleporting while the client is still loading the world
         // gives unreliable results.
         ServerScheduler.schedule(EVICTION_DELAY, () ->
                 evict(player, "the claim had changed hands"));
     }
 
     /**
-     * Empties the dimension and frees the claim.
-     *
-     * Used by the admin clear command. Releasing the claim without evicting
-     * would let a second player walk in and have placeStructure() wipe the
-     * structure out from under whoever is still inside — exactly what the
-     * claim exists to prevent.
+     * Empties the dimension and frees the claim. Used by the operator clear command.
+     * <p>
+     * Releasing the claim without evicting would let a second player walk in and have
+     * placeStructure() wipe the structure from under whoever is still inside, which is
+     * exactly what the claim exists to prevent.
      *
      * @return how many players were sent home
      */
@@ -158,8 +160,7 @@ public final class UltraSpaceSession {
 
         if (ultraSpace != null) {
             // Copy first: teleporting mutates the level's player list, and
-            // MinecraftServer.execute() does NOT defer when it is already on
-            // the server thread.
+            // MinecraftServer.execute() does NOT defer when already on the server thread.
             for (ServerPlayer player : List.copyOf(ultraSpace.players())) {
                 evict(player, "an operator cleared the dimension");
                 evicted++;
@@ -173,6 +174,11 @@ public final class UltraSpaceSession {
         return evicted;
     }
 
+    /**
+     * Sends a player home without ending anyone's session.
+     *
+     * @param reason English text for the server log only, never shown to players
+     */
     private static void evict(ServerPlayer player, String reason) {
         if (!player.isAlive() || player.isRemoved()) return;
         if (!isInUltraSpace(player)) return;
@@ -189,9 +195,9 @@ public final class UltraSpaceSession {
         player.teleportTo(overworld,
                 destination.getX() + 0.5, destination.getY(), destination.getZ() + 0.5, 0, 0);
 
-        // The Ultra-Space blanket invulnerability does not follow them out, and
-        // the saved position may have been built over while they were away.
-        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 100, 254, false, false, true));
+        // The Ultra-Space blanket invulnerability does not follow them out, and the saved
+        // position may have been built over while they were away.
+        TeleportEffects.applyLandingProtection(player);
 
         UltraBeasts.LOGGER.info("Evicted {} from Ultra-Space: {}.",
                 player.getGameProfile().getName(), reason);

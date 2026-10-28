@@ -1,6 +1,7 @@
 package dev.darcosse.ultrabeasts.neoforge.client;
 
 import dev.darcosse.ultrabeasts.UltraBeasts;
+import dev.darcosse.ultrabeasts.client.UltraBeastsClient;
 import dev.darcosse.ultrabeasts.client.particle.ModParticleProviders;
 import dev.darcosse.ultrabeasts.client.renderer.ReturnWormholeRenderer;
 import dev.darcosse.ultrabeasts.client.renderer.WormholeRenderer;
@@ -9,6 +10,7 @@ import dev.darcosse.ultrabeasts.neoforge.UltraBeastsNeoForge;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 
@@ -24,6 +26,13 @@ import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 @EventBusSubscriber(modid = UltraBeasts.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class UltraBeastsNeoForgeClient {
 
+    /** Installs the client-only handlers (encounter cinematic). */
+    @SubscribeEvent
+    public static void onClientSetup(FMLClientSetupEvent event) {
+        UltraBeastsClient.init();
+    }
+
+    /** Registers the three entity renderers. */
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(UltraBeastsNeoForge.WORMHOLE.get(), WormholeRenderer::new);
@@ -31,6 +40,7 @@ public class UltraBeastsNeoForgeClient {
         event.registerEntityRenderer(UltraBeastsNeoForge.RETURN_WORMHOLE.get(), ReturnWormholeRenderer::new);
     }
 
+    /** Registers the three particle providers with their sprite sets. */
     @SubscribeEvent
     public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(UltraBeastsNeoForge.P_WORMHOLE.get(), ModParticleProviders.Wormhole::new);

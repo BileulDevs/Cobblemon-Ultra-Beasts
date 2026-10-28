@@ -14,17 +14,21 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Where each player was standing before entering Ultra-Space.
- *
- * This used to be a static HashMap on WormholeEntity, which meant every return
- * point was lost on server restart: a player who logged out inside Ultra-Space
- * came back at world spawn instead of where they left. Persisting it on the
- * overworld fixes that, and the data is tiny (one UUID + one position each).
+ * Where each player was standing in the overworld before entering Ultra-Space.
+ * <p>
+ * This used to be a static HashMap on WormholeEntity, which meant every return point was lost
+ * on server restart: a player who logged out inside Ultra-Space came back at world spawn
+ * instead of where they left. Persisting it on the overworld fixes that, and the data is
+ * tiny (one UUID and one position each). Server side only.
  */
 public class ReturnPointStore extends SavedData {
 
+    /** Name of the data file under the overworld's {@code data} folder. Part of the save format. */
+    private static final String DATA_NAME = "ultrabeasts_return_points";
+
     private final Map<UUID, BlockPos> returnPoints = new HashMap<>();
 
+    /** Writes every pending return point. */
     @Override
     public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
@@ -40,6 +44,7 @@ public class ReturnPointStore extends SavedData {
         return nbt;
     }
 
+    /** Reads what {@link #save} wrote, skipping malformed entries. */
     public static ReturnPointStore load(CompoundTag nbt, HolderLookup.Provider registries) {
         ReturnPointStore store = new ReturnPointStore();
 
@@ -60,16 +65,23 @@ public class ReturnPointStore extends SavedData {
     private static final SavedData.Factory<ReturnPointStore> FACTORY =
             new SavedData.Factory<>(ReturnPointStore::new, ReturnPointStore::load, null);
 
+    /** Returns the server's store, creating it on first use. */
     public static ReturnPointStore get(MinecraftServer server) {
         return server.overworld().getDataStorage()
-                .computeIfAbsent(FACTORY, "ultrabeasts_return_points");
+                .computeIfAbsent(FACTORY, DATA_NAME);
     }
 
+    /** Remembers where the player should come back to, replacing any previous point. */
     public void put(UUID player, BlockPos pos) {
         returnPoints.put(player, pos);
         setDirty();
     }
 
+    /**
+     * Takes the player's return point out of the store.
+     *
+     * @return the saved position, or null if none was recorded
+     */
     public BlockPos remove(UUID player) {
         BlockPos pos = returnPoints.remove(player);
         if (pos != null) setDirty();

@@ -2,7 +2,6 @@
   "dimension.travel.ultra_space": "You have traveled several light-years, where are you?",
   "command.ultrabeasts.reload.success": "§aConfiguration reloaded successfully!",
   "command.ultrabeasts.reload.rate": "§7New wormhole rate: §e1/%s",
-  "command.ultrabeasts.reload.error": "§cError while reloading: %s",
   "command.ultrabeasts.reload.success_short": "§aConfig reloaded! Rate: 1/%s",
   "command.ultrabeasts.info.header": "§6=== Wormhole Info ===",
   "command.ultrabeasts.info.rate": "§7Current rate: §e1/%s §7(§e%s%%§7)",
@@ -27,5 +26,9 @@
   "message.ultrabeasts.occupied": "§cThe Ultra-Space is already occupied.",
   "message.ultrabeasts.evicted": "§5The Ultra-Space moved on without you..",
   "command.ultrabeasts.wormhole.spawn.occupied": "A player already holds the Ultra-Space. Wait for them to leave.",
-  "command.ultrabeasts.wormhole.clear.evicted": "§7Sent %s player(s) back to the overworld."
+  "command.ultrabeasts.wormhole.clear.evicted": "§7Sent %s player(s) back to the overworld.",
+  "entity.cobblemon_ultrabeast.wormhole.spawn": "Wormhole opens",
+  "entity.cobblemon_ultrabeast.wormhole.ambient": "Wormhole hums",
+  "cinematic.cobblemon_ultrabeast.skip": "Press Space to skip",
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultra Beast sighted"
 }

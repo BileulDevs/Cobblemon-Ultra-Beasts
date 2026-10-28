@@ -27,5 +27,23 @@
         "stream": true
       }
     ]
+  },
+  "encounter_intro": {
+    "category": "master",
+    "sounds": [
+      {
+        "name": "cobblemon_ultrabeast:encounter_intro",
+        "stream": true
+      }
+    ]
+  },
+  "encounter_roar": {
+    "category": "master",
+    "sounds": [
+      {
+        "name": "cobblemon_ultrabeast:encounter_roar",
+        "stream": false
+      }
+    ]
   }
 }

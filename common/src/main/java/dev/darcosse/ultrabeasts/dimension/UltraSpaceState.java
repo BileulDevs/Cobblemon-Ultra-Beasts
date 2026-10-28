@@ -10,27 +10,38 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * State of the single Ultra-Space instance: the structure in place, its exit
- * portal, and who currently holds the dimension.
- *
- * The occupancy lock is a lease, not a token: the server owns it, exactly one
- * player can hold it, and it survives a restart. Every check reads the game
- * time from the same place, so two players can never both consider themselves
- * legitimate.
- *
- * Volumes are stored as bounding boxes rather than one BlockPos per block.
- * For celesteela (8 parts of 48x48x48) the old format meant ~885 000 NBT
- * entries written on every save; structure parts are axis-aligned cuboids, so
- * two corners carry the same information.
+ * Persisted state of the single Ultra-Space instance: the structure in place, its exit
+ * portal, and who currently holds the dimension. Saved with the Ultra-Space level.
+ * <p>
+ * The occupancy lock is a lease, not a token: the server owns it, exactly one player can
+ * hold it, and it survives a restart. Every check reads the game time from the same place,
+ * so two players can never both consider themselves legitimate.
+ * <p>
+ * Volumes are stored as bounding boxes rather than one BlockPos per block. For celesteela
+ * (8 parts of 48x48x48) the old format meant ~885 000 NBT entries written on every save;
+ * structure parts are axis-aligned cuboids, so two corners carry the same information.
+ * <p>
+ * The NBT keys below are a save format: renaming one makes existing worlds forget their
+ * structure or their occupant.
  */
 public class UltraSpaceState extends SavedData {
 
-    /** An inclusive axis-aligned volume. */
+    /** Name of the data file under the level's {@code data} folder. */
+    private static final String DATA_NAME = "ultrabeasts_structure";
+
+    /**
+     * An inclusive axis-aligned volume.
+     *
+     * @param min lowest corner, inclusive
+     * @param max highest corner, inclusive
+     */
     public record Region(BlockPos min, BlockPos max) {
+        /** Serialises the two corners as int arrays. */
         CompoundTag toTag() {
             CompoundTag tag = new CompoundTag();
             tag.putIntArray("min", new int[]{min.getX(), min.getY(), min.getZ()});
@@ -50,7 +61,8 @@ public class UltraSpaceState extends SavedData {
         }
     }
 
-    public final List<Region> regions = new ArrayList<>();
+    /** Volumes of the structure currently in place; empty when none is up. */
+    private final List<Region> regions = new ArrayList<>();
 
     /**
      * Where the exit portal belongs for the structure currently in place,
@@ -70,6 +82,7 @@ public class UltraSpaceState extends SavedData {
      */
     private long graceEndsAt;
 
+    /** Writes the regions, the exit portal position and the lease. */
     @Override
     public CompoundTag save(CompoundTag nbt, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
@@ -90,6 +103,7 @@ public class UltraSpaceState extends SavedData {
         return nbt;
     }
 
+    /** Reads what {@link #save} wrote. Malformed region entries are skipped, not fatal. */
     public static UltraSpaceState load(CompoundTag nbt, HolderLookup.Provider registries) {
         UltraSpaceState state = new UltraSpaceState();
 
@@ -117,11 +131,29 @@ public class UltraSpaceState extends SavedData {
     private static final SavedData.Factory<UltraSpaceState> FACTORY =
             new SavedData.Factory<>(UltraSpaceState::new, UltraSpaceState::load, null);
 
+    /** Returns the state stored in Ultra-Space, creating an empty one on first use. */
     public static UltraSpaceState getServerState(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(FACTORY, "ultrabeasts_structure");
+        return level.getDataStorage().computeIfAbsent(FACTORY, DATA_NAME);
     }
 
     // ---- structure -------------------------------------------------------
+
+    /** Read-only view of the structure's volumes. */
+    public List<Region> getRegions() {
+        return Collections.unmodifiableList(regions);
+    }
+
+    /** Records one more volume of the structure being placed. */
+    public void addRegion(Region region) {
+        regions.add(region);
+        setDirty();
+    }
+
+    /** Forgets every volume: no structure is considered in place afterwards. */
+    public void clearRegions() {
+        regions.clear();
+        setDirty();
+    }
 
     /** @return null when no structure is currently in place. */
     public BlockPos getReturnPortalPos() {
@@ -134,6 +166,7 @@ public class UltraSpaceState extends SavedData {
         setDirty();
     }
 
+    /** Whether a structure is currently standing. */
     public boolean hasStructure() {
         return !regions.isEmpty();
     }
@@ -146,6 +179,8 @@ public class UltraSpaceState extends SavedData {
      * @param gameTime current game time, from the overworld
      */
     public boolean isClaimed(long gameTime) {
+        // Not a pure getter: an expired lease is cleared on the spot, so every caller sees the
+        // same answer afterwards.
         if (occupant == null) return false;
 
         // graceEndsAt == 0 means the occupant is online: no expiry.
@@ -163,6 +198,7 @@ public class UltraSpaceState extends SavedData {
         return isClaimed(gameTime) ? occupant : null;
     }
 
+    /** Whether this player holds a valid lease right now. */
     public boolean isOccupant(UUID player, long gameTime) {
         return isClaimed(gameTime) && occupant.equals(player);
     }
@@ -188,6 +224,7 @@ public class UltraSpaceState extends SavedData {
         setDirty();
     }
 
+    /** Frees the dimension. */
     public void clearClaim() {
         this.occupant = null;
         this.graceEndsAt = 0;

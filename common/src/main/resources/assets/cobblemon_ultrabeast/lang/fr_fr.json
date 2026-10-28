@@ -2,7 +2,6 @@
   "dimension.travel.ultra_space": "Vous avez voyagé plusieurs années lumières, où êtes-vous ?",
   "command.ultrabeasts.reload.success": "§aConfiguration rechargée avec succès !",
   "command.ultrabeasts.reload.rate": "§7Nouveau taux de Trou de ver: §e1/%s",
-  "command.ultrabeasts.reload.error": "§cErreur lors du rechargement: %s",
   "command.ultrabeasts.reload.success_short": "§aConfig rechargée ! Taux: 1/%s",
   "command.ultrabeasts.info.header": "§6=== Info Trou de ver ===",
   "command.ultrabeasts.info.rate": "§7Taux actuel: §e1/%s §7(§e%s%%§7)",
@@ -10,7 +9,7 @@
   "block.ultrabeasts.chimeras_portal": "Trou de ver d'Ultra Chimère",
   "block.ultrabeasts.chimeras_core": "Noyau de Chimère",
   "advancement.ultrabeasts.enter_ultra_space_dimension.title": "Vers l'Inconnu",
-  "advancement.ultrabeasts.enter_ultra_space.description": "Entrez dans le mystérieux Trou de ver",
+  "advancement.ultrabeasts.enter_ultra_space_dimension.description": "Entrez dans le mystérieux Trou de ver",
   "advancement.ultra_beast_master.title": "Maître de l'Ultra-Espace",
   "advancement.ultra_beast_master.description": "Capturez toutes les Ultra-Chimères",
   "message.ultrabeasts.portal_spawn": "§5Vous ressentez l'appel du vide..",
@@ -27,5 +26,9 @@
   "message.ultrabeasts.occupied": "§cL'Ultra-Espace est déjà occupé.",
   "message.ultrabeasts.evicted": "§5L'Ultra-Espace a continué sans vous..",
   "command.ultrabeasts.wormhole.spawn.occupied": "Un joueur occupe déjà l'Ultra-Espace. Attendez qu'il en sorte.",
-  "command.ultrabeasts.wormhole.clear.evicted": "§7%s joueur(s) renvoyé(s) dans l'overworld."
+  "command.ultrabeasts.wormhole.clear.evicted": "§7%s joueur(s) renvoyé(s) dans l'overworld.",
+  "entity.cobblemon_ultrabeast.wormhole.spawn": "Un trou de ver s'ouvre",
+  "entity.cobblemon_ultrabeast.wormhole.ambient": "Un trou de ver vrombit",
+  "cinematic.cobblemon_ultrabeast.skip": "Appuyez sur Espace pour passer",
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultra-Chimère repérée"
 }

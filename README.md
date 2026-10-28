@@ -2,13 +2,12 @@
 
 Rare wormholes tear open in the overworld. Step through one and you land in **Ultra-Space**, a void dimension where a single Ultra Beast waits inside a structure built for it. Catch it, or leave empty-handed — either way the wormhole is gone when you get back.
 
-Runs on **Fabric** and **NeoForge**, Minecraft **1.21.1**, Cobblemon **1.8.0**.
+Runs on **Fabric** and **NeoForge**, Minecraft **1.21.1**, Cobblemon **1.8.4**.
 
 [![CurseForge](https://img.shields.io/curseforge/dt/1333072?logo=curseforge&label=Downloads&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/cobblemon-ultra-beasts)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green?logo=minecraft)](https://www.minecraft.net)
 [![Fabric](https://img.shields.io/badge/Fabric-supported-dbb37d?logo=fabric)](https://fabricmc.net)
 [![NeoForge](https://img.shields.io/badge/NeoForge-supported-e04e14)](https://neoforged.net)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
@@ -70,28 +69,42 @@ The second one tracks each species separately, so it fills in as you go.
 
 ## Configuration
 
-A file is created at `config/ultrabeasts.json` on first launch:
+A file is created at `config/cobblemon_ultrabeast/main.json` on first launch:
 
 ```json
 {
-  "WORMHOLE_SPAWN_CHANCE": 2500,
+  "WORMHOLE_SPAWN_CHANCE": 2000,
   "TRY_SPAWN_INTERVAL": 400
 }
 ```
 
 `TRY_SPAWN_INTERVAL` is how often the server rolls for a wormhole, in ticks. 400 is twenty seconds.
 
-`WORMHOLE_SPAWN_CHANCE` is the denominator of that roll: 2500 means a 1-in-2500 chance each time. Together the defaults work out to roughly one wormhole per 14 hours of a single player being online — rare by design.
+`WORMHOLE_SPAWN_CHANCE` is the denominator of that roll: 2000 means a 1-in-2000 chance each time. Together the defaults work out to roughly one wormhole per 11 hours of a single player being online — rare by design. Existing config files keep their own value: the default only applies to a new file.
 
 Want to test? Set the chance to `1` and reload; you'll get a wormhole on the next interval. Out-of-range values are clamped rather than crashing, and the corrected value is written back to the file.
 
 Run `/ultrabeasts reload` to apply changes without a restart.
 
+Coming from 4.0 or earlier? Your old `config/ultrabeasts.json` is moved to the new location automatically on first launch, and renamed to `ultrabeasts.json.migrated`.
+
+### Client settings
+
+Each player also gets `config/cobblemon_ultrabeast/client.json`, read by their own game only:
+
+```json
+{
+  "ENCOUNTER_CINEMATIC": true
+}
+```
+
+Set `ENCOUNTER_CINEMATIC` to `false` to skip the arrival cinematic in Ultra-Space and get a short fade from black instead. It is read again on every trip, so no restart is needed.
+
 ---
 
 ## Installation
 
-1. Install Cobblemon 1.8.0 for Minecraft 1.21.1.
+1. Install Cobblemon 1.8.4 or later for Minecraft 1.21.1.
 2. Install the Kotlin bridge for your loader — Fabric Language Kotlin on Fabric, Kotlin for Forge on NeoForge. Cobblemon needs it.
 3. Drop the Ultra-Beasts jar matching your loader into `mods/`.
 4. Launch.
@@ -101,7 +114,7 @@ Run `/ultrabeasts reload` to apply changes without a restart.
 | | Fabric | NeoForge |
 |---|---|---|
 | Minecraft | 1.21.1 | 1.21.1 |
-| Cobblemon | 1.8.0 | 1.8.0 |
+| Cobblemon | 1.8.4+ | 1.8.4+ |
 | Also required | Fabric API, Fabric Language Kotlin | Kotlin for Forge |
 
 ### A note on the world warning
@@ -132,4 +145,4 @@ Standard Architectury multiloader layout: shared code in `common/`, loader-speci
 
 ## Issues
 
-Bug reports and suggestions go to the [issue tracker](https://github.com/BileulDevs/Cobblemon-Ultra-Beasts/issues). Please include your loader, your `config/ultrabeasts.json`, and the server log rather than just the client one — most of this mod runs server-side.
+Bug reports and suggestions go to the [issue tracker](https://github.com/BileulDevs/Cobblemon-Ultra-Beasts/issues). Please include your loader, your `config/cobblemon_ultrabeast/main.json`, and the server log rather than just the client one — most of this mod runs server-side.

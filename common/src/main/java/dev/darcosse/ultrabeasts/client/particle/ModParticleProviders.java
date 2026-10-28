@@ -7,13 +7,16 @@ import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.core.particles.SimpleParticleType;
 
 /**
- * The three particle providers, grouped so both loaders reference the same class.
+ * The three particle providers, grouped so both loaders register the same classes. Each one
+ * just forwards the spawn arguments to its particle. Client side only.
  */
 public final class ModParticleProviders {
 
+    /** Providers only, never instantiated. */
     private ModParticleProviders() {
     }
 
+    /** Creates {@link WormholeParticle}s; the velocity carries the target point. */
     public record Wormhole(SpriteSet sprites) implements ParticleProvider<SimpleParticleType> {
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level,
@@ -23,6 +26,7 @@ public final class ModParticleProviders {
         }
     }
 
+    /** Creates {@link ReturnWormholeParticle}s; the velocity carries the target point. */
     public record ReturnWormhole(SpriteSet sprites) implements ParticleProvider<SimpleParticleType> {
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level,
@@ -32,6 +36,7 @@ public final class ModParticleProviders {
         }
     }
 
+    /** Creates {@link SparkParticle}s; the velocity is ignored. */
     public record Spark(SpriteSet sprites) implements ParticleProvider<SimpleParticleType> {
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level,
