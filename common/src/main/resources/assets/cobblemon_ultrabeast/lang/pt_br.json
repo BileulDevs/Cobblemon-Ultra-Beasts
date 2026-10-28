@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "O servidor",
   "entity.cobblemon_ultrabeast.wormhole": "Buraco de minhoca",
   "entity.cobblemon_ultrabeast.wormhole_animation": "Energia do Ultraespaço",
+  "entity.cobblemon_ultrabeast.return_wormhole": "Buraco de minhoca de retorno",
   "dimension.cobblemon_ultrabeast.ultra_space": "Ultraespaço",
   "biome.cobblemon_ultrabeast.ultra_void": "Ultravazio",
   "message.ultrabeasts.occupied": "§cO Ultraespaço já está ocupado.",

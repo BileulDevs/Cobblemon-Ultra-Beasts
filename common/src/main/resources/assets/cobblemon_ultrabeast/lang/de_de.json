@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "Der Server",
   "entity.cobblemon_ultrabeast.wormhole": "Wurmloch",
   "entity.cobblemon_ultrabeast.wormhole_animation": "Ultraraum-Energie",
+  "entity.cobblemon_ultrabeast.return_wormhole": "Rückkehr-Wurmloch",
   "dimension.cobblemon_ultrabeast.ultra_space": "Ultraraum",
   "biome.cobblemon_ultrabeast.ultra_void": "Ultraleere",
   "message.ultrabeasts.occupied": "§cDer Ultraraum ist bereits besetzt.",

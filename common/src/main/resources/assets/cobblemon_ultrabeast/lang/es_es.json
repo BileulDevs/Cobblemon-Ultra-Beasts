@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "El servidor",
   "entity.cobblemon_ultrabeast.wormhole": "Agujero de gusano",
   "entity.cobblemon_ultrabeast.wormhole_animation": "Energía del Ultraespacio",
+  "entity.cobblemon_ultrabeast.return_wormhole": "Agujero de gusano de regreso",
   "dimension.cobblemon_ultrabeast.ultra_space": "Ultraespacio",
   "biome.cobblemon_ultrabeast.ultra_void": "Ultravacío",
   "message.ultrabeasts.occupied": "§cEl Ultraespacio ya está ocupado.",

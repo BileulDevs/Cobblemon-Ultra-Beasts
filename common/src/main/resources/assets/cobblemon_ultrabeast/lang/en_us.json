@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "The Server",
   "entity.cobblemon_ultrabeast.wormhole": "Wormhole",
   "entity.cobblemon_ultrabeast.wormhole_animation": "Ultra-Space Energy",
+  "entity.cobblemon_ultrabeast.return_wormhole": "Return Wormhole",
   "dimension.cobblemon_ultrabeast.ultra_space": "Ultra-Space",
   "biome.cobblemon_ultrabeast.ultra_void": "Ultra-Void",
   "message.ultrabeasts.occupied": "§cThe Ultra-Space is already occupied.",

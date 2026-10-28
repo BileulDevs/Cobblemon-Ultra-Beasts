@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "サーバー",
   "entity.cobblemon_ultrabeast.wormhole": "ワームホール",
   "entity.cobblemon_ultrabeast.wormhole_animation": "ウルトラスペースのエネルギー",
+  "entity.cobblemon_ultrabeast.return_wormhole": "帰還のワームホール",
   "dimension.cobblemon_ultrabeast.ultra_space": "ウルトラスペース",
   "biome.cobblemon_ultrabeast.ultra_void": "ウルトラヴォイド",
   "message.ultrabeasts.occupied": "§cウルトラスペースはすでに使用中です。",

@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "Le Serveur",
   "entity.cobblemon_ultrabeast.wormhole": "Trou de Ver",
   "entity.cobblemon_ultrabeast.wormhole_animation": "Énergie de l'Ultra-Espace",
+  "entity.cobblemon_ultrabeast.return_wormhole": "Trou de ver de retour",
   "dimension.cobblemon_ultrabeast.ultra_space": "Ultra-Space",
   "biome.cobblemon_ultrabeast.ultra_void": "Ultra-Vide",
   "message.ultrabeasts.occupied": "§cL'Ultra-Espace est déjà occupé.",

@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "Il server",
   "entity.cobblemon_ultrabeast.wormhole": "Wormhole",
   "entity.cobblemon_ultrabeast.wormhole_animation": "Energia dell'Ultraspazio",
+  "entity.cobblemon_ultrabeast.return_wormhole": "Wormhole di ritorno",
   "dimension.cobblemon_ultrabeast.ultra_space": "Ultraspazio",
   "biome.cobblemon_ultrabeast.ultra_void": "Ultravuoto",
   "message.ultrabeasts.occupied": "§cL'Ultraspazio è già occupato.",

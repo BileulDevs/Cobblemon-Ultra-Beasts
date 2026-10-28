@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "Serwer",
   "entity.cobblemon_ultrabeast.wormhole": "Tunel czasoprzestrzenny",
   "entity.cobblemon_ultrabeast.wormhole_animation": "Energia Ultra Przestrzeni",
+  "entity.cobblemon_ultrabeast.return_wormhole": "Tunel powrotny",
   "dimension.cobblemon_ultrabeast.ultra_space": "Ultra Przestrzeń",
   "biome.cobblemon_ultrabeast.ultra_void": "Ultra Pustka",
   "message.ultrabeasts.occupied": "§cUltra Przestrzeń jest już zajęta.",

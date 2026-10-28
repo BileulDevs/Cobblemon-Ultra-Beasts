@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "伺服器",
   "entity.cobblemon_ultrabeast.wormhole": "蟲洞",
   "entity.cobblemon_ultrabeast.wormhole_animation": "究極空間能量",
+  "entity.cobblemon_ultrabeast.return_wormhole": "返回蟲洞",
   "dimension.cobblemon_ultrabeast.ultra_space": "究極空間",
   "biome.cobblemon_ultrabeast.ultra_void": "究極虛空",
   "message.ultrabeasts.occupied": "§c究極空間已被佔用。",

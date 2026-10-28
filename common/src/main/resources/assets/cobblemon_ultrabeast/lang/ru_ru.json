@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "Сервер",
   "entity.cobblemon_ultrabeast.wormhole": "Червоточина",
   "entity.cobblemon_ultrabeast.wormhole_animation": "Энергия Ультрапространства",
+  "entity.cobblemon_ultrabeast.return_wormhole": "Обратная червоточина",
   "dimension.cobblemon_ultrabeast.ultra_space": "Ультрапространство",
   "biome.cobblemon_ultrabeast.ultra_void": "Ультрапустота",
   "message.ultrabeasts.occupied": "§cУльтрапространство уже занято.",

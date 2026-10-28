@@ -21,6 +21,7 @@
   "command.ultrabeasts.generic.server_name": "서버",
   "entity.cobblemon_ultrabeast.wormhole": "웜홀",
   "entity.cobblemon_ultrabeast.wormhole_animation": "울트라스페이스 에너지",
+  "entity.cobblemon_ultrabeast.return_wormhole": "귀환 웜홀",
   "dimension.cobblemon_ultrabeast.ultra_space": "울트라스페이스",
   "biome.cobblemon_ultrabeast.ultra_void": "울트라 보이드",
   "message.ultrabeasts.occupied": "§c울트라스페이스는 이미 사용 중입니다.",
