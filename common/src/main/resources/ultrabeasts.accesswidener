@@ -1,10 +1,6 @@
 accessWidener	v2	named
 
-# Display / BlockDisplay setters are private in vanilla. WormholeSpawnAnimation needs them
-# to animate its debris. The original Fabric-only mod compiled thanks to the transitive
-# access widener of com.cobblemon:fabric; the common module does not get it.
+# Nothing to widen at the moment. Up to 4.0 the spawn animation animated BlockDisplay debris
+# through four private Display setters; the tear that replaced it in 4.1 draws itself.
+# The file stays because both build scripts reference it (loom accessWidenerPath).
 # Keep in sync with neoforge/src/main/resources/META-INF/accesstransformer.cfg.
-accessible	method	net/minecraft/world/entity/Display	setTransformation	(Lcom/mojang/math/Transformation;)V
-accessible	method	net/minecraft/world/entity/Display	setTransformationInterpolationDuration	(I)V
-accessible	method	net/minecraft/world/entity/Display	setTransformationInterpolationDelay	(I)V
-accessible	method	net/minecraft/world/entity/Display$BlockDisplay	setBlockState	(Lnet/minecraft/world/level/block/state/BlockState;)V

@@ -24,5 +24,8 @@
     "fabric-api": ">=0.116.6",
     "cobblemon": ">=1.8.4"
   },
+  "mixins": [
+    "ultrabeasts.mixins.json"
+  ],
   "accessWidener": "ultrabeasts.accesswidener"
 }

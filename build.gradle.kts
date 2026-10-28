@@ -21,6 +21,9 @@ allprojects {
         maven("https://maven.neoforged.net/releases/")
         maven("https://artefacts.cobblemon.com/releases/")
         maven("https://thedarkcolour.github.io/KotlinForForge/")
+        // Serves org.spongepowered:mixin, needed by common's mixin annotation processor.
+        // Same repository the Cobblemon Safari build resolves it from.
+        maven("https://maven.impactdev.net/repository/development/")
     }
 
     tasks {

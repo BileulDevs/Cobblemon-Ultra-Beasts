@@ -1,6 +1,7 @@
 package dev.darcosse.ultrabeasts.client.particle;
 
 import dev.darcosse.ultrabeasts.entity.AbstractPortalEntity;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SpriteSet;
@@ -8,6 +9,7 @@ import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Swirl particle that flies from the portal's rim to its centre while shifting from pink to
@@ -39,6 +41,19 @@ public abstract class AbstractWormholeParticle extends TextureSheetParticle {
 
     /** Quad size at birth; it shrinks linearly to 10% of that at death. */
     private static final float BASE_QUAD_SIZE = 0.4f;
+
+    /**
+     * Distance to the camera, in blocks, below which a particle starts to shrink, and the one
+     * at which it has vanished.
+     * <p>
+     * Seen from the front, the swirl's ring lies between the portal and the player, a block
+     * or two from the eye: quads of 0.44 block at that distance filled half the screen with
+     * pink discs. From the side or the back the ring is farther away and nothing changes.
+     * Raising NEAR_FULL_SIZE thins the funnel's mouth for a player standing close; lowering
+     * NEAR_VANISH below ~0.5 brings back the discs right against the eye.
+     */
+    private static final double NEAR_FULL_SIZE = 3.0;
+    private static final double NEAR_VANISH = 1.0;
 
     // Colour ramp, as fractions of the lifetime: pink, then lilac, then azure, then white.
     private static final float PINK_UNTIL = 0.08f;
@@ -149,6 +164,25 @@ public abstract class AbstractWormholeParticle extends TextureSheetParticle {
         // fade, but changes the look: left as is on purpose.
         this.alpha = (float) Math.sin(Math.PI * progress);
         this.quadSize = BASE_QUAD_SIZE * (1.1f - progress);
+    }
+
+    /**
+     * Shrinks the particle as it nears the camera (see {@link #NEAR_FULL_SIZE}). Called once
+     * per particle per frame: one camera lookup and one distance, cheap next to the quad
+     * itself.
+     */
+    @Override
+    public float getQuadSize(float partialTick) {
+        Vec3 eye = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        double px = this.xo + (this.x - this.xo) * partialTick;
+        double py = this.yo + (this.y - this.yo) * partialTick;
+        double pz = this.zo + (this.z - this.zo) * partialTick;
+        double distance = Math.sqrt(eye.distanceToSqr(px, py, pz));
+        if (distance >= NEAR_FULL_SIZE) {
+            return this.quadSize;
+        }
+        double factor = Math.max(0.0, (distance - NEAR_VANISH) / (NEAR_FULL_SIZE - NEAR_VANISH));
+        return (float) (this.quadSize * factor);
     }
 
     /** Linear interpolation from start to end. */

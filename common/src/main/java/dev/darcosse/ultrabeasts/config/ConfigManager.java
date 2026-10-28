@@ -26,10 +26,11 @@ public final class ConfigManager {
 
     /**
      * Sub-folder of the loader's config directory. It matches the mod id so that every file
-     * this mod may add later sits in one place. Changing it orphans existing configs: users
+     * of the mod sits in one place: {@code main.json} here, {@code client.json} in
+     * {@code ClientConfigManager}. Changing it orphans existing configs: users
      * would silently fall back to defaults.
      */
-    private static final String CONFIG_FOLDER = UltraBeasts.MOD_ID;
+    public static final String CONFIG_FOLDER = UltraBeasts.MOD_ID;
 
     /** Main settings file inside {@link #CONFIG_FOLDER}. */
     private static final String CONFIG_FILE = "main.json";
@@ -43,8 +44,13 @@ public final class ConfigManager {
      */
     private static final String MIGRATED_SUFFIX = ".migrated";
 
-    /** Default "1 in N" odds for a spawn attempt to open a wormhole. Higher means rarer. */
-    public static final int DEFAULT_SPAWN_CHANCE = 2500;
+    /**
+     * Default "1 in N" odds for a spawn attempt to open a wormhole. Higher means rarer. With
+     * the default interval, 2000 is about one wormhole per 11 hours of one player online
+     * (2500 up to 4.0, about 14 hours). Only applies to new config files: an existing
+     * main.json keeps its value.
+     */
+    public static final int DEFAULT_SPAWN_CHANCE = 2000;
 
     /**
      * Default ticks between two spawn attempts (400 ticks = 20 s). Lower means more frequent
@@ -99,9 +105,11 @@ public final class ConfigManager {
         }
 
         config = loaded;
-        if (validate()) {
-            saveConfig();
-        }
+        validate();
+        // Written back even when nothing was corrected: Gson fills keys missing from an older
+        // file with their defaults, and saving is what makes them appear in the file, where
+        // the user can find them. It also drops keys a version no longer reads.
+        saveConfig();
     }
 
     /**

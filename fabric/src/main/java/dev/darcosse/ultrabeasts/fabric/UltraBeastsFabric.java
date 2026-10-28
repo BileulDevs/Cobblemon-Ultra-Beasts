@@ -6,6 +6,7 @@ import dev.darcosse.ultrabeasts.handler.UltraSpaceDamageHandler;
 import dev.darcosse.ultrabeasts.handler.UltraSpaceSession;
 import dev.darcosse.ultrabeasts.handler.UnbreakableBlocksHandler;
 import dev.darcosse.ultrabeasts.handler.VoidFallHandler;
+import dev.darcosse.ultrabeasts.network.EncounterCinematicPayload;
 import dev.darcosse.ultrabeasts.registry.*;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -14,6 +15,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -41,6 +43,7 @@ public class UltraBeastsFabric implements ModInitializer {
         registerSounds();
         registerEntities();
         registerChunkGenerator();
+        registerPayloads();
 
         UltraBeasts.init(new FabricPlatformAdapter());
 
@@ -64,6 +67,8 @@ public class UltraBeastsFabric implements ModInitializer {
         Registry.register(BuiltInRegistries.SOUND_EVENT, ModSounds.WORMHOLE_SPAWN_ID, ModSounds.WORMHOLE_SPAWN);
         Registry.register(BuiltInRegistries.SOUND_EVENT, ModSounds.WORMHOLE_ANIMATION_SPAWN_ID, ModSounds.WORMHOLE_ANIMATION_SPAWN);
         Registry.register(BuiltInRegistries.SOUND_EVENT, ModSounds.WORMHOLE_AMBIENT_ID, ModSounds.WORMHOLE_AMBIENT);
+        Registry.register(BuiltInRegistries.SOUND_EVENT, ModSounds.ENCOUNTER_INTRO_ID, ModSounds.ENCOUNTER_INTRO);
+        Registry.register(BuiltInRegistries.SOUND_EVENT, ModSounds.ENCOUNTER_ROAR_ID, ModSounds.ENCOUNTER_ROAR);
 
         UltraBeasts.LOGGER.info("Registering Sound Events for {}", UltraBeasts.MOD_ID);
     }
@@ -86,6 +91,14 @@ public class UltraBeastsFabric implements ModInitializer {
                 id("void_generator"), VoidChunkGenerator.CODEC);
 
         UltraBeasts.LOGGER.info("Registering Generators for {}", UltraBeasts.MOD_ID);
+    }
+
+    /**
+     * Declares the payload types. Must run on both sides: a dedicated server needs the codec
+     * to encode, the client to decode. The client receiver is in the client entry point.
+     */
+    private void registerPayloads() {
+        PayloadTypeRegistry.playS2C().register(EncounterCinematicPayload.TYPE, EncounterCinematicPayload.CODEC);
     }
 
     /** Connects the loader-independent handlers to Fabric API events. */

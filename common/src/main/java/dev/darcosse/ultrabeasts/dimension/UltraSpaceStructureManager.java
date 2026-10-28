@@ -8,6 +8,7 @@ import dev.darcosse.ultrabeasts.entity.ReturnWormholeEntity;
 import dev.darcosse.ultrabeasts.registry.ModDimensions;
 import dev.darcosse.ultrabeasts.registry.ModEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.resources.ResourceLocation;
@@ -23,6 +24,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,19 +69,55 @@ public final class UltraSpaceStructureManager {
     private static final double RETURN_PORTAL_HEIGHT = 2.0;
 
     /**
+     * How far above the configured Ultra Beast position the ground search may start, in
+     * blocks, when that position lies inside a block. Larger tolerates a sloppier position
+     * but may climb onto a ledge above the intended floor.
+     */
+    private static final int GROUND_SEARCH_UP = 3;
+
+    /**
+     * How far below the configured position the ground search goes, in blocks. Past it the
+     * configured height is used as is: the beast is meant to stand over the void.
+     */
+    private static final int GROUND_SEARCH_DOWN = 8;
+
+    /**
+     * How the encounter cinematic presents a structure before its close-up. Sent to the
+     * client as its ordinal: append, never reorder.
+     */
+    public enum CinematicStyle {
+        /** A wide circle above the structure: for open layouts seen best from the sky. */
+        FLY_OVER,
+        /**
+         * A glide from the arrival point toward the beast, at head height: for layouts
+         * under a roof (nihilego's cave), where a fly-over only films the outside.
+         */
+        WALKTHROUGH
+    }
+
+    /**
      * Every point of interest of one structure.
      *
      * @param parts             templates making up the structure, with their offsets
-     * @param pokemonSpawn      where the Ultra Beast is sent out
+     * @param pokemonSpawn      where the Ultra Beast is sent out; its height is only a hint,
+     *                          see {@link #ultraBeastSpawnPoint}
      * @param playerSpawn       where the player arrives
      * @param returnPortalSpawn where the exit portal is placed
+     * @param cinematic         how the encounter cinematic presents the structure
      */
     public record StructureConfig(
             List<StructurePart> parts,
             BlockPos pokemonSpawn,
             BlockPos playerSpawn,
-            BlockPos returnPortalSpawn
-    ) {}
+            BlockPos returnPortalSpawn,
+            CinematicStyle cinematic
+    ) {
+        /** A structure presented with the default fly-over. */
+        public StructureConfig(List<StructurePart> parts, BlockPos pokemonSpawn, BlockPos playerSpawn,
+                               BlockPos returnPortalSpawn) {
+            this(parts, pokemonSpawn, playerSpawn, returnPortalSpawn, CinematicStyle.FLY_OVER);
+        }
+    }
 
     private static final Map<String, StructureConfig> CONFIGS = Map.of(
             "nihilego", new StructureConfig(
@@ -89,7 +127,9 @@ public final class UltraSpaceStructureManager {
                     ),
                     new BlockPos(26, 86, 20),
                     new BlockPos(26, 86, 76),
-                    new BlockPos(26, 87, 83)
+                    new BlockPos(26, 87, 83),
+                    // The beast lies at the back of a cave: a fly-over only showed its roof.
+                    CinematicStyle.WALKTHROUGH
             ),
             "kartana", new StructureConfig(
                     List.of(
@@ -420,7 +460,7 @@ public final class UltraSpaceStructureManager {
         Pokemon ultraBeast = species.create(ULTRA_BEAST_LEVEL);
         ultraBeast.sendOut(
                 level,
-                pos.getCenter().add(0, 1, 0),
+                ultraBeastSpawnPoint(level, pos),
                 null,
                 pokemonEntity -> {
                     pokemonEntity.setNoAi(true);
@@ -432,6 +472,66 @@ public final class UltraSpaceStructureManager {
                     return null;
                 }
         );
+    }
+
+    /**
+     * Where the Ultra Beast of a structure is sent out: the configured X and Z, standing on
+     * the floor found at or just below the configured height.
+     * <p>
+     * Up to 4.0 the beast was placed 1.5 blocks above the configured block, whatever lay
+     * there. Since it has no gravity (it must not fall off ledges), it hung in the air by up
+     * to a block and a half, depending on whether the configured position named the floor
+     * block or the air above it. Both conventions now land on the floor surface, slabs and
+     * stairs included, since the collision shape's top is used.
+     * <p>
+     * Shared with the encounter cinematic, which aims there until the entity reaches the
+     * client. Reads at most a dozen block states; runs once per trip.
+     */
+    public static Vec3 ultraBeastSpawnPoint(ServerLevel level, BlockPos pokemonSpawn) {
+        BlockPos.MutableBlockPos cursor = pokemonSpawn.mutable();
+
+        // A position inside a block (the floor itself, or a wall by mistake): climb out first.
+        for (int i = 0; i < GROUND_SEARCH_UP && hasCollision(level, cursor); i++) {
+            cursor.move(0, 1, 0);
+        }
+
+        int lowest = cursor.getY() - GROUND_SEARCH_DOWN;
+        for (; cursor.getY() >= lowest; cursor.move(0, -1, 0)) {
+            var shape = level.getBlockState(cursor).getCollisionShape(level, cursor);
+            if (!shape.isEmpty()) {
+                return new Vec3(pokemonSpawn.getX() + 0.5, cursor.getY() + shape.max(Direction.Axis.Y),
+                        pokemonSpawn.getZ() + 0.5);
+            }
+        }
+
+        UltraBeasts.LOGGER.warn("No floor under the Ultra Beast position {}, spawning it at that height.", pokemonSpawn);
+        return Vec3.atBottomCenterOf(pokemonSpawn);
+    }
+
+    /** Whether the block at {@code pos} has any collision box. */
+    private static boolean hasCollision(ServerLevel level, BlockPos pos) {
+        return !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
+    }
+
+    /**
+     * Bounding box of the standing structure, the union of its parts, or null when none
+     * stands. Read from the saved regions rather than recomputed from the templates.
+     */
+    public static UltraSpaceState.Region structureBounds(ServerLevel level) {
+        List<UltraSpaceState.Region> regions = UltraSpaceState.getServerState(level).getRegions();
+        if (regions.isEmpty()) return null;
+
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+        for (UltraSpaceState.Region region : regions) {
+            minX = Math.min(minX, region.min().getX());
+            minY = Math.min(minY, region.min().getY());
+            minZ = Math.min(minZ, region.min().getZ());
+            maxX = Math.max(maxX, region.max().getX());
+            maxY = Math.max(maxY, region.max().getY());
+            maxZ = Math.max(maxZ, region.max().getZ());
+        }
+        return new UltraSpaceState.Region(new BlockPos(minX, minY, minZ), new BlockPos(maxX, maxY, maxZ));
     }
 
     /** Picks a random structure key among the registered configurations. */

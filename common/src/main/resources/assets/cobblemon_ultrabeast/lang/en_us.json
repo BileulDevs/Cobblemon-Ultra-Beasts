@@ -28,5 +28,7 @@
   "command.ultrabeasts.wormhole.spawn.occupied": "A player already holds the Ultra-Space. Wait for them to leave.",
   "command.ultrabeasts.wormhole.clear.evicted": "§7Sent %s player(s) back to the overworld.",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Wormhole opens",
-  "entity.cobblemon_ultrabeast.wormhole.ambient": "Wormhole hums"
+  "entity.cobblemon_ultrabeast.wormhole.ambient": "Wormhole hums",
+  "cinematic.cobblemon_ultrabeast.skip": "Press Space to skip",
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultra Beast sighted"
 }

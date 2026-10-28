@@ -8,7 +8,6 @@ Runs on **Fabric** and **NeoForge**, Minecraft **1.21.1**, Cobblemon **1.8.4**.
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green?logo=minecraft)](https://www.minecraft.net)
 [![Fabric](https://img.shields.io/badge/Fabric-supported-dbb37d?logo=fabric)](https://fabricmc.net)
 [![NeoForge](https://img.shields.io/badge/NeoForge-supported-e04e14)](https://neoforged.net)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
@@ -74,20 +73,32 @@ A file is created at `config/cobblemon_ultrabeast/main.json` on first launch:
 
 ```json
 {
-  "WORMHOLE_SPAWN_CHANCE": 2500,
+  "WORMHOLE_SPAWN_CHANCE": 2000,
   "TRY_SPAWN_INTERVAL": 400
 }
 ```
 
 `TRY_SPAWN_INTERVAL` is how often the server rolls for a wormhole, in ticks. 400 is twenty seconds.
 
-`WORMHOLE_SPAWN_CHANCE` is the denominator of that roll: 2500 means a 1-in-2500 chance each time. Together the defaults work out to roughly one wormhole per 14 hours of a single player being online — rare by design.
+`WORMHOLE_SPAWN_CHANCE` is the denominator of that roll: 2000 means a 1-in-2000 chance each time. Together the defaults work out to roughly one wormhole per 11 hours of a single player being online — rare by design. Existing config files keep their own value: the default only applies to a new file.
 
 Want to test? Set the chance to `1` and reload; you'll get a wormhole on the next interval. Out-of-range values are clamped rather than crashing, and the corrected value is written back to the file.
 
 Run `/ultrabeasts reload` to apply changes without a restart.
 
 Coming from 4.0 or earlier? Your old `config/ultrabeasts.json` is moved to the new location automatically on first launch, and renamed to `ultrabeasts.json.migrated`.
+
+### Client settings
+
+Each player also gets `config/cobblemon_ultrabeast/client.json`, read by their own game only:
+
+```json
+{
+  "ENCOUNTER_CINEMATIC": true
+}
+```
+
+Set `ENCOUNTER_CINEMATIC` to `false` to skip the arrival cinematic in Ultra-Space and get a short fade from black instead. It is read again on every trip, so no restart is needed.
 
 ---
 

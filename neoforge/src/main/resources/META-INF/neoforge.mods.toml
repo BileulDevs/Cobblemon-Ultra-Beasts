@@ -12,6 +12,9 @@ A mod that adds all Ultra-Beasts and the Ultra-Space dimension
 '''
 logoFile = "assets/cobblemon_ultrabeast/icon.png"
 
+[[mixins]]
+config = "ultrabeasts.mixins.json"
+
 [[dependencies.cobblemon_ultrabeast]]
 modId = "minecraft"
 type = "required"

@@ -1,16 +1,20 @@
 package dev.darcosse.ultrabeasts.entity;
 
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
+import com.cobblemon.mod.common.pokemon.Species;
 import dev.darcosse.ultrabeasts.UltraBeasts;
 import dev.darcosse.ultrabeasts.config.ConfigManager;
 import dev.darcosse.ultrabeasts.dimension.ReturnPointStore;
+import dev.darcosse.ultrabeasts.dimension.UltraSpaceState;
 import dev.darcosse.ultrabeasts.dimension.UltraSpaceStructureManager;
 import dev.darcosse.ultrabeasts.handler.UltraSpaceSession;
+import dev.darcosse.ultrabeasts.network.EncounterCinematicPayload;
+import dev.darcosse.ultrabeasts.platform.Platform;
 import dev.darcosse.ultrabeasts.registry.ModDimensions;
 import dev.darcosse.ultrabeasts.registry.ModEntities;
 import dev.darcosse.ultrabeasts.registry.ModEvents;
 import dev.darcosse.ultrabeasts.registry.ModParticles;
 import dev.darcosse.ultrabeasts.util.ServerScheduler;
-import dev.darcosse.ultrabeasts.util.TeleportEffects;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.core.BlockPos;
@@ -26,6 +30,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.Random;
 
@@ -258,7 +263,8 @@ public class WormholeEntity extends AbstractPortalEntity {
 
         WormholeSpawnAnimation animation = new WormholeSpawnAnimation(
                 ModEntities.WORMHOLE_ANIMATION, level, pos);
-        animation.setPos(pos.getX() + 0.5, pos.getY() + WormholeSpawnAnimation.DESCENT_HEIGHT, pos.getZ() + 0.5);
+        Vec3 centre = WormholeSpawnAnimation.centreOf(pos);
+        animation.setPos(centre.x, centre.y, centre.z);
         level.addFreshEntity(animation);
 
         level.playSound(null, pos, SoundEvents.WARDEN_SONIC_BOOM, SoundSource.HOSTILE, 2.0f, 0.5f);
@@ -316,7 +322,9 @@ public class WormholeEntity extends AbstractPortalEntity {
         // a restart.
         UltraSpaceStructureManager.placeStructure(ultraSpace, structureKey);
 
-        TeleportEffects.applyTransitionBlindness(player);
+        // No blindness on arrival any more: whether the player sees the cinematic is their
+        // own setting (client.json), which the server does not know. The client hides the
+        // terrain loading itself, with the cinematic's black opening or a plain fade.
 
         BlockPos playerSpawn = config.playerSpawn();
         player.teleportTo(ultraSpace,
@@ -333,7 +341,31 @@ public class WormholeEntity extends AbstractPortalEntity {
             ultraSpace.playSound(null, pos, SoundEvents.WARDEN_HEARTBEAT, SoundSource.AMBIENT, 1.5f, 0.8f);
 
             player.displayClientMessage(Component.translatable("dimension.travel.ultra_space"), false);
+
+            sendEncounterCinematic(player, ultraSpace, structureKey, config);
         });
+    }
+
+    /**
+     * Tells the player's client they arrived, with what the encounter cinematic needs. The
+     * client plays it, or a plain fade if the player turned it off. Sent from the delayed arrival
+     * task rather than right after the teleport: by then the client has left the terrain
+     * loading screen, which the cinematic screen would otherwise replace.
+     */
+    private static void sendEncounterCinematic(ServerPlayer player, ServerLevel ultraSpace, String structureKey,
+                                               UltraSpaceStructureManager.StructureConfig config) {
+        UltraSpaceState.Region bounds = UltraSpaceStructureManager.structureBounds(ultraSpace);
+        Species species = PokemonSpecies.getByName(structureKey);
+        if (bounds == null || species == null) {
+            // Nothing to film: no structure, or no Ultra Beast was spawned (unknown species).
+            return;
+        }
+
+        Platform.get().sendToPlayer(player, new EncounterCinematicPayload(
+                bounds.min(), bounds.max(),
+                UltraSpaceStructureManager.ultraBeastSpawnPoint(ultraSpace, config.pokemonSpawn()),
+                species.getTranslationKey(),
+                config.cinematic()));
     }
 
     /** Completes the "Into the Unknown" advancement, whatever criteria it declares. */
