@@ -62,7 +62,8 @@ public class WormholeEntity extends AbstractPortalEntity {
      * <p>
      * The renderer draws the quad at scale 2 centred on the entity, so at 1 the portal rests
      * on the ground and its hitbox overlaps a standing player: you walk straight into it. At
-     * 2 or 3 it floats, and can only be entered by clicking it.
+     * 2 or 3 it floats, and can only be entered by clicking it. 2 was tried and looked too
+     * low.
      */
     private static final int HEIGHT_ABOVE_GROUND = 3;
 
@@ -73,10 +74,19 @@ public class WormholeEntity extends AbstractPortalEntity {
     private static final int MAX_GROUND_OFFSET = 10;
 
     /**
-     * Plane of the particle ring, along the swirl axis from the entity: one block towards the
-     * viewer. Mirrors the exit portal.
+     * Plane the particles start from, along the swirl axis from the entity: one block towards
+     * the viewer. The exit portal's drawing, mirrored so the funnel sinks behind the disc
+     * (the exit portal uses -1 and +3 along world Z). Shared with the arrival animation, so
+     * the hand-over does not jump.
      */
-    private static final double PARTICLE_RING_Z_OFFSET = 1.0;
+    public static final double PARTICLE_RING_Z_OFFSET = 1.0;
+
+    /**
+     * Share of the ring's radius the particles start from: the rim only, exactly like the
+     * exit portal. Lower values spread the start over the disc. Shared with the arrival
+     * animation.
+     */
+    public static final double PARTICLE_INNER_SHARE = PortalSwirl.RIM_ONLY;
 
     /**
      * Where the particles converge, along the swirl axis from the entity: three blocks away
@@ -99,6 +109,18 @@ public class WormholeEntity extends AbstractPortalEntity {
     private static final String NBT_PLACEMENT_TIME = "PlacementTime";
 
     /**
+     * NBT key of {@link #targetStructure}. Absent from wormholes saved before forced
+     * destinations existed: they stay random.
+     */
+    private static final String NBT_TARGET_STRUCTURE = "TargetStructure";
+
+    /**
+     * Server side: structure this wormhole leads to, or null for a random one. Set by
+     * {@code /ultrabeasts wormhole <ultra_beast>}, through the arrival animation.
+     */
+    private String targetStructure;
+
+    /**
      * Game tick this wormhole was placed. Instance field, not static: it is written into this
      * entity's NBT, and a static value meant every wormhole shared, and overwrote, the same
      * timestamp.
@@ -107,15 +129,20 @@ public class WormholeEntity extends AbstractPortalEntity {
 
     /**
      * Client side: axis of this wormhole's swirl, towards the local player as they stood when
-     * it appeared to them, then never changed. Taken over from the arrival animation when this
-     * client saw it, so the funnel does not jump at the hand-over. Null until the first
-     * client tick.
+     * the particle portal appeared to them, then never changed. Taken over from the arrival
+     * animation, which froze it at the impact, when this client saw it, so the funnel does not
+     * jump at the hand-over. Null until the first client tick.
      */
     private Vec3 swirlAxis;
 
     /** Constructor used by the entity type factory. */
     public WormholeEntity(EntityType<? extends WormholeEntity> type, Level level) {
         super(type, level);
+    }
+
+    /** Makes this wormhole lead to the given structure instead of a random one; null for random. */
+    public void setTargetStructure(String structureKey) {
+        this.targetStructure = structureKey;
     }
 
     /** Records when the wormhole opened. Called right after spawning, by the animation entity. */
@@ -142,6 +169,11 @@ public class WormholeEntity extends AbstractPortalEntity {
      * Turns the funnel towards the viewer, once: the disc itself always faces the camera,
      * but a funnel that kept turning would visibly swing as the player walks around it.
      */
+    @Override
+    protected double swirlInnerShare() {
+        return PARTICLE_INNER_SHARE;
+    }
+
     @Override
     protected Vec3 swirlAxis() {
         if (swirlAxis == null) {
@@ -180,11 +212,14 @@ public class WormholeEntity extends AbstractPortalEntity {
 
     /**
      * Opens a wormhole on the player, bypassing the random roll. Backs
-     * {@code /ultrabeasts wormhole spawn}.
+     * {@code /ultrabeasts wormhole spawn} (random destination) and
+     * {@code /ultrabeasts wormhole <ultra_beast>} (forced destination).
      *
+     * @param structureKey structure the wormhole leads to, or null for a random one; must be
+     *                     a key of {@link UltraSpaceStructureManager#structureKeys()}
      * @return false if Ultra-Space is already claimed, in which case nothing is spawned
      */
-    public static boolean forceSpawnToPlayer(ServerLevel level, ServerPlayer player) {
+    public static boolean forceSpawnToPlayer(ServerLevel level, ServerPlayer player, String structureKey) {
         // The command used to bypass every check, which let an op drop a second player into an
         // Ultra-Space that was already taken.
         if (UltraSpaceSession.isOccupied(level.getServer())) {
@@ -192,7 +227,7 @@ public class WormholeEntity extends AbstractPortalEntity {
         }
 
         ModEvents.cleanUp(level.getServer());
-        spawnWormhole(level, player.blockPosition());
+        spawnWormhole(level, player.blockPosition(), structureKey);
         return true;
     }
 
@@ -213,7 +248,7 @@ public class WormholeEntity extends AbstractPortalEntity {
 
         BlockPos spawnPos = findValidSpawnLocation(level, random);
         if (spawnPos != null) {
-            spawnWormhole(level, spawnPos);
+            spawnWormhole(level, spawnPos, null);
         }
     }
 
@@ -281,14 +316,18 @@ public class WormholeEntity extends AbstractPortalEntity {
         return ground.getFluidState().isEmpty();
     }
 
-    /** Starts the arrival animation; the wormhole itself appears when the animation ends. */
-    private static void spawnWormhole(ServerLevel level, BlockPos pos) {
+    /**
+     * Starts the arrival animation; the wormhole itself appears when the animation ends, and
+     * leads to {@code structureKey}, or to a random structure if it is null.
+     */
+    private static void spawnWormhole(ServerLevel level, BlockPos pos, String structureKey) {
         level.getEntities(ModEntities.WORMHOLE, e -> true).forEach(Entity::discard);
 
         WormholeSpawnAnimation animation = new WormholeSpawnAnimation(
                 ModEntities.WORMHOLE_ANIMATION, level, pos);
         Vec3 centre = WormholeSpawnAnimation.centreOf(pos);
         animation.setPos(centre.x, centre.y, centre.z);
+        animation.setTargetStructure(structureKey);
         level.addFreshEntity(animation);
 
         level.playSound(null, pos, SoundEvents.WARDEN_SONIC_BOOM, SoundSource.HOSTILE, 2.0f, 0.5f);
@@ -316,7 +355,10 @@ public class WormholeEntity extends AbstractPortalEntity {
         this.discard();
     }
 
-    /** Builds a random structure in Ultra-Space and moves the player into it. */
+    /**
+     * Builds this wormhole's structure in Ultra-Space, the forced one or a random one, and
+     * moves the player into it.
+     */
     private void teleportToUltraSpaceDimension(ServerPlayer player) {
         ServerLevel ultraSpace = player.getServer().getLevel(ModDimensions.ULTRA_SPACE_DIMENSION);
         if (ultraSpace == null) {
@@ -324,7 +366,11 @@ public class WormholeEntity extends AbstractPortalEntity {
             return;
         }
 
-        String structureKey = UltraSpaceStructureManager.getRandomStructureKey(player.getRandom());
+        // A forced key that no longer exists (a structure removed since the save) falls back
+        // to random rather than to the error below, which would leave the player stranded.
+        String structureKey = targetStructure != null && UltraSpaceStructureManager.getConfig(targetStructure) != null
+                ? targetStructure
+                : UltraSpaceStructureManager.getRandomStructureKey(player.getRandom());
         UltraSpaceStructureManager.StructureConfig config = UltraSpaceStructureManager.getConfig(structureKey);
 
         // Checked BEFORE claiming the dimension and saving the return point: returning after
@@ -346,14 +392,19 @@ public class WormholeEntity extends AbstractPortalEntity {
         // a restart.
         UltraSpaceStructureManager.placeStructure(ultraSpace, structureKey);
 
-        // No blindness on arrival any more: whether the player sees the cinematic is their
-        // own setting (client.json), which the server does not know. The client hides the
-        // terrain loading itself, with the cinematic's black opening or a plain fade.
+        // No blindness on arrival any more: the client keeps Minecraft's terrain loading
+        // screen up until the structure is fully drawn, then plays the cinematic or a plain
+        // fade, its own setting (client.json), which the server does not know.
 
         BlockPos playerSpawn = config.playerSpawn();
         player.teleportTo(ultraSpace,
                 playerSpawn.getX() + 0.5, playerSpawn.getY(), playerSpawn.getZ() + 0.5,
                 player.getYRot(), player.getXRot());
+
+        // Right after the teleport, not with the delayed sounds: the client must get it while
+        // its terrain loading screen is still up, to hold that screen until the structure is
+        // drawn. Packets keep their order, so it lands after the dimension change.
+        sendEncounterCinematic(player, ultraSpace, structureKey, config);
 
         ServerScheduler.schedule(ARRIVAL_SOUND_DELAY, () -> {
             // The player may have left, died or logged out during the delay.
@@ -365,16 +416,13 @@ public class WormholeEntity extends AbstractPortalEntity {
             ultraSpace.playSound(null, pos, SoundEvents.WARDEN_HEARTBEAT, SoundSource.AMBIENT, 1.5f, 0.8f);
 
             player.displayClientMessage(Component.translatable("dimension.travel.ultra_space"), false);
-
-            sendEncounterCinematic(player, ultraSpace, structureKey, config);
         });
     }
 
     /**
      * Tells the player's client they arrived, with what the encounter cinematic needs. The
-     * client plays it, or a plain fade if the player turned it off. Sent from the delayed arrival
-     * task rather than right after the teleport: by then the client has left the terrain
-     * loading screen, which the cinematic screen would otherwise replace.
+     * client holds its terrain loading screen until the structure is drawn, then plays the
+     * cinematic, or a plain fade if the player turned it off.
      */
     private static void sendEncounterCinematic(ServerPlayer player, ServerLevel ultraSpace, String structureKey,
                                                UltraSpaceStructureManager.StructureConfig config) {
@@ -409,10 +457,14 @@ public class WormholeEntity extends AbstractPortalEntity {
     @Override
     protected void readAdditionalSaveData(CompoundTag nbt) {
         this.placementTime = nbt.getLong(NBT_PLACEMENT_TIME);
+        this.targetStructure = nbt.contains(NBT_TARGET_STRUCTURE) ? nbt.getString(NBT_TARGET_STRUCTURE) : null;
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag nbt) {
         nbt.putLong(NBT_PLACEMENT_TIME, this.placementTime);
+        if (targetStructure != null) {
+            nbt.putString(NBT_TARGET_STRUCTURE, targetStructure);
+        }
     }
 }

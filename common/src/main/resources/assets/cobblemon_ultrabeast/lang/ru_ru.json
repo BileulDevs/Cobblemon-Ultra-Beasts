@@ -27,10 +27,11 @@
   "message.ultrabeasts.occupied": "§cУльтрапространство уже занято.",
   "message.ultrabeasts.evicted": "§5Ультрапространство ушло дальше без вас...",
   "command.ultrabeasts.wormhole.spawn.occupied": "Ультрапространство уже занято другим игроком. Дождитесь, пока он выйдет.",
+  "command.ultrabeasts.wormhole.target.success": "Червоточина к %2$s призвана игроком %1$s",
+  "command.ultrabeasts.wormhole.target.unknown": "Неизвестное Ультрачудовище: %s",
   "command.ultrabeasts.wormhole.clear.evicted": "§7Игроков возвращено в Верхний мир: %s.",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Открывается червоточина",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Червоточина гудит",
-  "cinematic.cobblemon_ultrabeast.skip": "Нажмите Пробел, чтобы пропустить",
   "cinematic.cobblemon_ultrabeast.encounter.heading": "Замечено Ультрачудовище",
   "title.ultrabeasts.wormhole_impact": "Ультраворота",
   "title.ultrabeasts.wormhole_impact.subtitle": "Реальность разрывается"

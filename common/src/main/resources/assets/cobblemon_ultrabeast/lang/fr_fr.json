@@ -27,10 +27,11 @@
   "message.ultrabeasts.occupied": "§cL'Ultra-Espace est déjà occupé.",
   "message.ultrabeasts.evicted": "§5L'Ultra-Espace a continué sans vous..",
   "command.ultrabeasts.wormhole.spawn.occupied": "Un joueur occupe déjà l'Ultra-Espace. Attendez qu'il en sorte.",
+  "command.ultrabeasts.wormhole.target.success": "Trou de ver vers %2$s invoqué par %1$s",
+  "command.ultrabeasts.wormhole.target.unknown": "Ultra-Chimère inconnue : %s",
   "command.ultrabeasts.wormhole.clear.evicted": "§7%s joueur(s) renvoyé(s) dans l'overworld.",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Un trou de ver s'ouvre",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Un trou de ver vrombit",
-  "cinematic.cobblemon_ultrabeast.skip": "Appuyez sur Espace pour passer",
   "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultra-Chimère repérée",
   "title.ultrabeasts.wormhole_impact": "Ultra-Brèche",
   "title.ultrabeasts.wormhole_impact.subtitle": "La réalité se déchire"

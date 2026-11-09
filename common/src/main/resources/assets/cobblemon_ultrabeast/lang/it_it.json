@@ -27,10 +27,11 @@
   "message.ultrabeasts.occupied": "§cL'Ultraspazio è già occupato.",
   "message.ultrabeasts.evicted": "§5L'Ultraspazio è andato avanti senza di te...",
   "command.ultrabeasts.wormhole.spawn.occupied": "Un giocatore occupa già l'Ultraspazio. Aspetta che ne esca.",
+  "command.ultrabeasts.wormhole.target.success": "Wormhole verso %2$s evocato da %1$s",
+  "command.ultrabeasts.wormhole.target.unknown": "Ultracreatura sconosciuta: %s",
   "command.ultrabeasts.wormhole.clear.evicted": "§7%s giocatore/i rimandato/i nell'Overworld.",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Un wormhole si apre",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Un wormhole ronza",
-  "cinematic.cobblemon_ultrabeast.skip": "Premi Spazio per saltare",
   "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultracreatura avvistata",
   "title.ultrabeasts.wormhole_impact": "Ultravarco",
   "title.ultrabeasts.wormhole_impact.subtitle": "La realtà si squarcia"

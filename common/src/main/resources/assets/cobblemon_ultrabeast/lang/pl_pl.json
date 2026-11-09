@@ -27,10 +27,11 @@
   "message.ultrabeasts.occupied": "§cUltra Przestrzeń jest już zajęta.",
   "message.ultrabeasts.evicted": "§5Ultra Przestrzeń odeszła bez ciebie...",
   "command.ultrabeasts.wormhole.spawn.occupied": "Inny gracz zajmuje już Ultra Przestrzeń. Poczekaj, aż ją opuści.",
+  "command.ultrabeasts.wormhole.target.success": "Tunel do %2$s przywołany przez %1$s",
+  "command.ultrabeasts.wormhole.target.unknown": "Nieznana Ultra Bestia: %s",
   "command.ultrabeasts.wormhole.clear.evicted": "§7Odesłano graczy do Overworldu: %s.",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Tunel się otwiera",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Tunel buczy",
-  "cinematic.cobblemon_ultrabeast.skip": "Naciśnij Spację, aby pominąć",
   "cinematic.cobblemon_ultrabeast.encounter.heading": "Wykryto Ultra Bestię",
   "title.ultrabeasts.wormhole_impact": "Ultratunel",
   "title.ultrabeasts.wormhole_impact.subtitle": "Rzeczywistość się rozdziera"

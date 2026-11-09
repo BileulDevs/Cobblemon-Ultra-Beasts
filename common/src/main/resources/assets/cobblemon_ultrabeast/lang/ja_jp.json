@@ -27,10 +27,11 @@
   "message.ultrabeasts.occupied": "§cウルトラスペースはすでに使用中です。",
   "message.ultrabeasts.evicted": "§5ウルトラスペースはあなたを置いて去っていった……",
   "command.ultrabeasts.wormhole.spawn.occupied": "別のプレイヤーがウルトラスペースにいます。出てくるまでお待ちください。",
+  "command.ultrabeasts.wormhole.target.success": "%1$s が %2$s へのワームホールを召喚しました",
+  "command.ultrabeasts.wormhole.target.unknown": "不明なウルトラビースト：%s",
   "command.ultrabeasts.wormhole.clear.evicted": "§7%s 人のプレイヤーをオーバーワールドに戻しました。",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "ワームホールが開く",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "ワームホールがうなる",
-  "cinematic.cobblemon_ultrabeast.skip": "スペースキーでスキップ",
   "cinematic.cobblemon_ultrabeast.encounter.heading": "ウルトラビースト発見",
   "title.ultrabeasts.wormhole_impact": "ウルトラホール",
   "title.ultrabeasts.wormhole_impact.subtitle": "現実が引き裂かれていく"

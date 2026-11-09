@@ -9,7 +9,9 @@
   ],
   "client": [
     "client.CameraMixin",
-    "client.GuiMixin"
+    "client.GuiMixin",
+    "client.LevelRendererAccessor",
+    "client.ViewAreaInvoker"
   ],
   "injectors": {
     "defaultRequire": 1

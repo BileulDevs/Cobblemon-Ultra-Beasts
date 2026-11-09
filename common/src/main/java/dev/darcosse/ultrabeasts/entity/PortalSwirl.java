@@ -45,6 +45,9 @@ public final class PortalSwirl {
      */
     private static final Map<Long, Vec3> REMEMBERED_AXES = new HashMap<>();
 
+    /** Inner share that puts every particle on the rim: the original swirl. */
+    public static final double RIM_ONLY = 1.0;
+
     /** Entries kept at most in {@link #REMEMBERED_AXES}; over it the map is simply cleared. */
     private static final int MAX_REMEMBERED_AXES = 8;
 
@@ -59,7 +62,8 @@ public final class PortalSwirl {
     }
 
     /**
-     * Spawns one tick of the swirl.
+     * Spawns one tick of the swirl, every particle starting on the ring's rim: the exit
+     * portal's look.
      *
      * @param centre            centre of the portal
      * @param axis              unit vector the funnel lies along
@@ -71,7 +75,26 @@ public final class PortalSwirl {
     public static void spawn(Level level, ParticleOptions type, Vec3 centre, Vec3 axis,
                              double ringOffset, double destinationOffset, double radius, int count,
                              RandomSource random) {
+        spawn(level, type, centre, axis, ringOffset, destinationOffset, radius, RIM_ONLY, count, random);
+    }
+
+    /**
+     * Spawns one tick of the swirl, the particles starting anywhere on the annulus between
+     * {@code innerShare} of the radius and the rim, evenly over its area.
+     * <p>
+     * All on the rim, the newborn particles (pink, and at their largest) bunch into a few
+     * large blobs on the ring while the middle stays empty: the particles rush in with an
+     * ease-out and spend little time at mid radius. Spread over the disc, they fill it.
+     *
+     * @param innerShare share of {@code radius} the annulus starts at: 1 for the rim only,
+     *                   0 for the whole disc
+     */
+    public static void spawn(Level level, ParticleOptions type, Vec3 centre, Vec3 axis,
+                             double ringOffset, double destinationOffset, double radius, double innerShare,
+                             int count, RandomSource random) {
         if (count <= 0) return;
+
+        double innerSquared = innerShare * innerShare;
 
         Vec3[] basis = basis(axis);
         Vec3 u = basis[0];
@@ -83,8 +106,10 @@ public final class PortalSwirl {
         try {
             for (int i = 0; i < count; i++) {
                 double angle = random.nextDouble() * Math.PI * 2;
-                double cos = Math.cos(angle) * radius;
-                double sin = Math.sin(angle) * radius;
+                // Square root: even over the area, not bunched towards the inner edge.
+                double distance = radius * Math.sqrt(innerSquared + random.nextDouble() * (1.0 - innerSquared));
+                double cos = Math.cos(angle) * distance;
+                double sin = Math.sin(angle) * distance;
                 level.addParticle(type,
                         ringCentre.x + u.x * cos + v.x * sin,
                         ringCentre.y + u.y * cos + v.y * sin,

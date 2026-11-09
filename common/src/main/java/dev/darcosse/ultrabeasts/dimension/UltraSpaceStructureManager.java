@@ -86,11 +86,15 @@ public final class UltraSpaceStructureManager {
      * client as its ordinal: append, never reorder.
      */
     public enum CinematicStyle {
-        /** A wide circle above the structure: for open layouts seen best from the sky. */
+        /**
+         * A wide circle above the structure. No structure uses it any more; kept so a
+         * structure can opt back in, and because the ordinal is on the wire.
+         */
         FLY_OVER,
         /**
-         * A glide from the arrival point toward the beast, at head height: for layouts
-         * under a roof (nihilego's cave), where a fly-over only films the outside.
+         * A glide from the arrival point toward the beast, at head height: first made for
+         * nihilego's cave, now the style of every structure, the walk toward the beast
+         * reading better than a view from the sky.
          */
         WALKTHROUGH
     }
@@ -112,10 +116,13 @@ public final class UltraSpaceStructureManager {
             BlockPos returnPortalSpawn,
             CinematicStyle cinematic
     ) {
-        /** A structure presented with the default fly-over. */
+        /**
+         * A structure presented with the default style, the walkthrough. Changing the default
+         * here changes the cinematic of every structure that does not name its own style.
+         */
         public StructureConfig(List<StructurePart> parts, BlockPos pokemonSpawn, BlockPos playerSpawn,
                                BlockPos returnPortalSpawn) {
-            this(parts, pokemonSpawn, playerSpawn, returnPortalSpawn, CinematicStyle.FLY_OVER);
+            this(parts, pokemonSpawn, playerSpawn, returnPortalSpawn, CinematicStyle.WALKTHROUGH);
         }
     }
 
@@ -127,9 +134,7 @@ public final class UltraSpaceStructureManager {
                     ),
                     new BlockPos(26, 86, 20),
                     new BlockPos(26, 86, 76),
-                    new BlockPos(26, 87, 83),
-                    // The beast lies at the back of a cave: a fly-over only showed its roof.
-                    CinematicStyle.WALKTHROUGH
+                    new BlockPos(26, 87, 83)
             ),
             "kartana", new StructureConfig(
                     List.of(
@@ -532,6 +537,14 @@ public final class UltraSpaceStructureManager {
             maxZ = Math.max(maxZ, region.max().getZ());
         }
         return new UltraSpaceState.Region(new BlockPos(minX, minY, minZ), new BlockPos(maxX, maxY, maxZ));
+    }
+
+    /**
+     * Every structure key, which is also the Ultra Beast's species name. Immutable; backs the
+     * suggestions of {@code /ultrabeasts wormhole <ultra_beast>}.
+     */
+    public static List<String> structureKeys() {
+        return STRUCTURE_KEYS;
     }
 
     /** Picks a random structure key among the registered configurations. */

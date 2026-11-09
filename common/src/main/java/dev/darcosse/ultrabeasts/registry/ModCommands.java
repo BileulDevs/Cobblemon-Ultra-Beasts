@@ -1,20 +1,27 @@
 package dev.darcosse.ultrabeasts.registry;
 
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
+import com.cobblemon.mod.common.pokemon.Species;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import dev.darcosse.ultrabeasts.config.ConfigManager;
+import dev.darcosse.ultrabeasts.dimension.UltraSpaceStructureManager;
 import dev.darcosse.ultrabeasts.entity.WormholeEntity;
 import dev.darcosse.ultrabeasts.handler.UltraSpaceSession;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.Locale;
+
 /**
  * The {@code /ultrabeasts} command tree: config reload and info, and operator tools to spawn
- * or clear wormholes. Server side; every message goes through a translation key resolved by
+ * wormholes, to a random or a chosen Ultra Beast, or clear them. Server side; every message goes through a translation key resolved by
  * the receiving client.
  */
 public final class ModCommands {
@@ -24,6 +31,9 @@ public final class ModCommands {
      * /gamemode; lowering it lets regular players spawn wormholes on demand.
      */
     private static final int OPERATOR_LEVEL = 2;
+
+    /** Name of the Ultra Beast argument, as shown in the command's usage. */
+    private static final String ULTRA_BEAST_ARGUMENT = "ultra_beast";
 
     /** Static command handlers only, never instantiated. */
     private ModCommands() {
@@ -42,7 +52,13 @@ public final class ModCommands {
                         .then(Commands.literal("spawn")
                                 .executes(ModCommands::summonWormhole))
                         .then(Commands.literal("clear")
-                                .executes(ModCommands::clearWormhole)))
+                                .executes(ModCommands::clearWormhole))
+                        // Next to the literals: brigadier tries "spawn" and "clear" first, and
+                        // no Ultra Beast bears either name.
+                        .then(Commands.argument(ULTRA_BEAST_ARGUMENT, StringArgumentType.word())
+                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                        UltraSpaceStructureManager.structureKeys(), builder))
+                                .executes(ModCommands::summonWormholeTo)))
         );
     }
 
@@ -60,6 +76,15 @@ public final class ModCommands {
             return player.getDisplayName();
         }
         return Component.translatable("command.ultrabeasts.generic.server_name");
+    }
+
+    /**
+     * The Ultra Beast's name, translated by the receiving client; the raw key if Cobblemon
+     * does not know the species.
+     */
+    private static Component ultraBeastName(String structureKey) {
+        Species species = PokemonSpecies.getByName(structureKey);
+        return species != null ? Component.translatable(species.getTranslationKey()) : Component.literal(structureKey);
     }
 
     /** {@code /ultrabeasts reload}: re-reads the config file and reports the new spawn rate. */
@@ -100,9 +125,30 @@ public final class ModCommands {
         return 1;
     }
 
-    /** {@code /ultrabeasts wormhole spawn}: opens a wormhole on the executing player. */
+    /** {@code /ultrabeasts wormhole spawn}: opens a wormhole to a random Ultra Beast on the executing player. */
     private static int summonWormhole(CommandContext<CommandSourceStack> context) {
+        return summon(context.getSource(), null);
+    }
+
+    /**
+     * {@code /ultrabeasts wormhole <ultra_beast>}: opens a wormhole on the executing player that
+     * leads to the given Ultra Beast's structure. Meant for testing one structure on demand.
+     */
+    private static int summonWormholeTo(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
+        String structureKey = StringArgumentType.getString(context, ULTRA_BEAST_ARGUMENT).toLowerCase(Locale.ROOT);
+        if (UltraSpaceStructureManager.getConfig(structureKey) == null) {
+            source.sendFailure(Component.translatable("command.ultrabeasts.wormhole.target.unknown", structureKey));
+            return 0;
+        }
+        return summon(source, structureKey);
+    }
+
+    /**
+     * Opens a wormhole on the executing player, leading to {@code structureKey}, or to a random
+     * structure if it is null, and reports the outcome.
+     */
+    private static int summon(CommandSourceStack source, String structureKey) {
         ServerPlayer player = source.getPlayer();
 
         if (player == null) {
@@ -113,16 +159,24 @@ public final class ModCommands {
         try {
             ServerLevel level = source.getLevel();
 
-            if (!WormholeEntity.forceSpawnToPlayer(level, player)) {
+            if (!WormholeEntity.forceSpawnToPlayer(level, player, structureKey)) {
                 source.sendFailure(Component.translatable("command.ultrabeasts.wormhole.spawn.occupied"));
                 return 0;
             }
 
             Component executor = executorName(source);
-            source.sendSuccess(
-                    () -> Component.translatable("command.ultrabeasts.wormhole.spawn.success", executor),
-                    true
-            );
+            if (structureKey == null) {
+                source.sendSuccess(
+                        () -> Component.translatable("command.ultrabeasts.wormhole.spawn.success", executor),
+                        true
+                );
+            } else {
+                Component beast = ultraBeastName(structureKey);
+                source.sendSuccess(
+                        () -> Component.translatable("command.ultrabeasts.wormhole.target.success", executor, beast),
+                        true
+                );
+            }
             return 1;
         } catch (Exception e) {
             // Kept: spawning touches entities and the world, and an operator command should
@@ -163,7 +217,7 @@ public final class ModCommands {
 
             return 1;
         } catch (Exception e) {
-            // Kept for the same reason as in summonWormhole.
+            // Kept for the same reason as in summon.
             source.sendFailure(
                     Component.translatable("command.ultrabeasts.wormhole.clear.error", e.getMessage())
             );

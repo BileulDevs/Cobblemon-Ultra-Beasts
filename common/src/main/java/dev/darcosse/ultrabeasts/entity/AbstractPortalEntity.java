@@ -98,6 +98,15 @@ public abstract class AbstractPortalEntity extends Entity {
     }
 
     /**
+     * Where on the ring the particles start, as a share of its radius: from there to the
+     * rim, evenly over the area (see {@link PortalSwirl}). The rim only by default, the look
+     * of the exit portal.
+     */
+    protected double swirlInnerShare() {
+        return PortalSwirl.RIM_ONLY;
+    }
+
+    /**
      * Emits the swirl of particles converging on the portal, client side.
      * <p>
      * The destination travels in the velocity arguments, which the particle factory reads as
@@ -124,9 +133,15 @@ public abstract class AbstractPortalEntity extends Entity {
 
         Level level = this.level();
         try {
+            // The entity's own random, not the level's. The level's random is shared with
+            // everything on the client, and in the overworld something reseeds it every tick
+            // (another mod: vanilla does not). Each tick then drew the same angles, so the
+            // particles of successive ticks followed the same few paths and piled up into a
+            // handful of pink "petals" instead of a swirl. The arrival animation, which used
+            // its own random, never showed it.
             PortalSwirl.spawn(level, type, this.position(), swirlAxis(),
                     particleRingZOffset(), particleDestinationZOffset(),
-                    PORTAL_RADIUS, PARTICLES_PER_TICK, level.random);
+                    PORTAL_RADIUS, swirlInnerShare(), PARTICLES_PER_TICK, this.random);
         } catch (RuntimeException e) {
             // Thrown when the particle's sprites were never loaded: missing or broken mod
             // assets, or a resource pack overriding particles/*.json. The provider then hits a

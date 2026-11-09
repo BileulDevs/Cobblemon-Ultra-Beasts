@@ -27,10 +27,11 @@
   "message.ultrabeasts.occupied": "§cEl Ultraespacio ya está ocupado.",
   "message.ultrabeasts.evicted": "§5El Ultraespacio siguió adelante sin ti...",
   "command.ultrabeasts.wormhole.spawn.occupied": "Un jugador ya ocupa el Ultraespacio. Espera a que salga.",
+  "command.ultrabeasts.wormhole.target.success": "Agujero de gusano hacia %2$s invocado por %1$s",
+  "command.ultrabeasts.wormhole.target.unknown": "Ultraente desconocido: %s",
   "command.ultrabeasts.wormhole.clear.evicted": "§7%s jugador(es) devuelto(s) a la superficie.",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Se abre un agujero de gusano",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Zumba un agujero de gusano",
-  "cinematic.cobblemon_ultrabeast.skip": "Pulsa Espacio para saltar",
   "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultraente avistado",
   "title.ultrabeasts.wormhole_impact": "Ultraumbral",
   "title.ultrabeasts.wormhole_impact.subtitle": "La realidad se desgarra"

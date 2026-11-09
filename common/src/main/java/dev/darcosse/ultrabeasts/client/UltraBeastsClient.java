@@ -1,6 +1,7 @@
 package dev.darcosse.ultrabeasts.client;
 
 import dev.darcosse.ultrabeasts.client.cinematic.ArrivalFadeScreen;
+import dev.darcosse.ultrabeasts.client.cinematic.ArrivalLoadingScreen;
 import dev.darcosse.ultrabeasts.client.cinematic.EncounterCinematicScreen;
 import dev.darcosse.ultrabeasts.client.config.ClientConfigManager;
 import dev.darcosse.ultrabeasts.client.fx.WormholeImpactEffects;
@@ -29,16 +30,16 @@ public final class UltraBeastsClient {
     }
 
     /**
-     * Arrival in Ultra-Space: the cinematic, or a plain fade for a player who turned it off.
-     * The settings are read again first, so editing {@code client.json} applies on the next
-     * trip without restarting; a file of a few bytes, read once per trip.
+     * Arrival in Ultra-Space: Minecraft's terrain loading screen, held until the structure is
+     * fully drawn, then the cinematic, or a plain fade for a player who turned it off. The
+     * settings are read again first, so editing {@code client.json} applies on the next trip
+     * without restarting; a file of a few bytes, read once per trip.
      */
     private static void onArrival(EncounterCinematicPayload payload) {
         ClientConfigManager.load();
-        if (ClientConfigManager.isEncounterCinematicEnabled()) {
-            EncounterCinematicScreen.open(payload);
-        } else {
-            ArrivalFadeScreen.open(payload);
-        }
+        Runnable next = ClientConfigManager.isEncounterCinematicEnabled()
+                ? () -> EncounterCinematicScreen.open(payload)
+                : () -> ArrivalFadeScreen.open(payload);
+        ArrivalLoadingScreen.open(payload, next);
     }
 }

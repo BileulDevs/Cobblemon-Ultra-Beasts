@@ -27,10 +27,11 @@
   "message.ultrabeasts.occupied": "§cO Ultraespaço já está ocupado.",
   "message.ultrabeasts.evicted": "§5O Ultraespaço seguiu em frente sem você...",
   "command.ultrabeasts.wormhole.spawn.occupied": "Um jogador já ocupa o Ultraespaço. Espere ele sair.",
+  "command.ultrabeasts.wormhole.target.success": "Buraco de minhoca para %2$s invocado por %1$s",
+  "command.ultrabeasts.wormhole.target.unknown": "Ultracriatura desconhecida: %s",
   "command.ultrabeasts.wormhole.clear.evicted": "§7%s jogador(es) enviado(s) de volta à superfície.",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Um buraco de minhoca se abre",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Um buraco de minhoca zumbe",
-  "cinematic.cobblemon_ultrabeast.skip": "Pressione Espaço para pular",
   "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultracriatura avistada",
   "title.ultrabeasts.wormhole_impact": "Ultraburaco",
   "title.ultrabeasts.wormhole_impact.subtitle": "A realidade está se rasgando"

@@ -90,9 +90,6 @@ public class WormholeSpawnAnimation extends Entity {
      */
     private static final int SWIRL_PER_TICK = 18;
 
-    /** Plane of the swirl's ring along its axis, one block towards the viewer, as on the portal. */
-    private static final double SWIRL_RING_OFFSET = 1.0;
-
     /** Radius of the swirl's ring, as on the portal. */
     private static final double SWIRL_RADIUS = 2.0;
 
@@ -147,6 +144,8 @@ public class WormholeSpawnAnimation extends Entity {
     private static final String NBT_TARGET_X = "TargetX";
     private static final String NBT_TARGET_Y = "TargetY";
     private static final String NBT_TARGET_Z = "TargetZ";
+    /** Absent from animations saved before forced destinations existed: they stay random. */
+    private static final String NBT_TARGET_STRUCTURE = "TargetStructure";
 
     /** Ticks played, server side. */
     private int animationTick = 0;
@@ -154,6 +153,12 @@ public class WormholeSpawnAnimation extends Entity {
     private BlockPos targetPos = BlockPos.ZERO;
 
     private boolean finalEntitySpawned = false;
+
+    /**
+     * Server side: structure the wormhole will lead to, or null for a random one. Set by
+     * {@code /ultrabeasts wormhole <ultra_beast>}, handed to the wormhole when it spawns.
+     */
+    private String targetStructure;
 
     /** Server side: whether the entity was moved onto its target since it was created or loaded. */
     private boolean positioned;
@@ -168,8 +173,9 @@ public class WormholeSpawnAnimation extends Entity {
     private boolean impactReported;
 
     /**
-     * Client side: axis of the swirl, towards the local player when the animation appeared to
-     * them, then fixed. Handed to the wormhole through {@link PortalSwirl#remember}.
+     * Client side: axis of the swirl, towards the local player at the impact, when the
+     * particle portal appears, then fixed. Null before that. Handed to the wormhole through
+     * {@link PortalSwirl#remember}.
      */
     private Vec3 swirlAxis;
 
@@ -191,6 +197,11 @@ public class WormholeSpawnAnimation extends Entity {
         this(type, level);
         this.targetPos = pos;
         this.entityData.set(DATA_STARTED_AT, level.getGameTime());
+    }
+
+    /** Makes the wormhole lead to the given structure instead of a random one; null for random. */
+    public void setTargetStructure(String structureKey) {
+        this.targetStructure = structureKey;
     }
 
     /**
@@ -292,6 +303,7 @@ public class WormholeSpawnAnimation extends Entity {
         WormholeEntity wormhole = new WormholeEntity(ModEntities.WORMHOLE, level);
         wormhole.setPos(centre.x, centre.y, centre.z);
         wormhole.setPlacementTime(level.getGameTime());
+        wormhole.setTargetStructure(targetStructure);
         level.addFreshEntity(wormhole);
 
         level.playSound(null, targetPos, ModSounds.WORMHOLE_SPAWN, SoundSource.HOSTILE, 3.0f, 0.8f);
@@ -310,6 +322,10 @@ public class WormholeSpawnAnimation extends Entity {
     private void clientTick() {
         // Before the particle guard: a broken particle sprite must not cost the impact.
         reportToImpactEffects(elapsed(0.0f));
+        // Also before the guard: the wormhole takes this axis over, particles or not.
+        if (swirlAxis == null && elapsed(0.0f) >= IMPACT_AT) {
+            freezeSwirlAxis();
+        }
         if (particlesUnavailable) return;
 
         Level level = this.level();
@@ -343,16 +359,12 @@ public class WormholeSpawnAnimation extends Entity {
 
     /**
      * Tells the client's impact effects where the animation stands: its timeline on the first
-     * tick this client sees, then the impact once. Also freezes the swirl's axis on that first
-     * tick, which is the moment the animation "appears" to this player.
+     * tick this client sees, then the impact once.
      */
     private void reportToImpactEffects(float t) {
         Vec3 centre = this.position();
         if (!arrivalReported) {
             arrivalReported = true;
-            swirlAxis = PortalSwirl.axisTowardsViewer(centre);
-            PortalSwirl.remember(centre, swirlAxis);
-
             long start = startGameTime();
             WormholeFxBridge.arrivalStarted(centre, start, start + IMPACT_AT);
             // A player who only comes into range well after the impact should not get a
@@ -367,6 +379,19 @@ public class WormholeSpawnAnimation extends Entity {
         }
     }
 
+    /**
+     * Turns the swirl towards the player, once, at the impact: the moment the particle portal
+     * appears. Frozen at the animation's first tick instead, it faced where the player stood
+     * when the singularity started gathering, which can be a few seconds and several blocks
+     * away from where they watch the portal open. Handed to the wormhole, so the funnel does
+     * not jump when the animation is replaced.
+     */
+    private void freezeSwirlAxis() {
+        Vec3 centre = this.position();
+        swirlAxis = PortalSwirl.axisTowardsViewer(centre);
+        PortalSwirl.remember(centre, swirlAxis);
+    }
+
     /** Level game time the animation started at, on this side's clock. */
     private long startGameTime() {
         long startedAt = this.entityData.get(DATA_STARTED_AT);
@@ -374,7 +399,7 @@ public class WormholeSpawnAnimation extends Entity {
     }
 
     /**
-     * Axis of the swirl, frozen towards the viewer (see {@link #reportToImpactEffects}).
+     * Axis of the swirl, frozen towards the viewer at the impact (see {@link #freezeSwirlAxis}).
      * Also gives the plane facing the viewer, for particle effects that must lie flat in the
      * picture like the renderer's drawing.
      */
@@ -429,7 +454,7 @@ public class WormholeSpawnAnimation extends Entity {
 
     /**
      * The portal's swirl, ramping from nothing to its full rate, with the same geometry as
-     * {@link AbstractPortalEntity}: ring one block in front, converging three blocks behind.
+     * the wormhole: spread over the disc, in its plane, converging three blocks behind it.
      */
     private void spawnSwirl(Level level, double x, double y, double z, double progress) {
         SimpleParticleType type = ModParticles.WORMHOLE;
@@ -437,8 +462,8 @@ public class WormholeSpawnAnimation extends Entity {
 
         int count = Mth.ceil(SWIRL_PER_TICK * Mth.clamp(progress, 0.0, 1.0));
         PortalSwirl.spawn(level, type, new Vec3(x, y, z), swirlAxis(),
-                SWIRL_RING_OFFSET, WormholeEntity.PARTICLE_DESTINATION_Z_OFFSET,
-                SWIRL_RADIUS, count, this.random);
+                WormholeEntity.PARTICLE_RING_Z_OFFSET, WormholeEntity.PARTICLE_DESTINATION_Z_OFFSET,
+                SWIRL_RADIUS, WormholeEntity.PARTICLE_INNER_SHARE, count, this.random);
     }
 
     /** Fast start, slow end. */
@@ -490,6 +515,7 @@ public class WormholeSpawnAnimation extends Entity {
         if (nbt.contains(NBT_TARGET_X)) {
             this.targetPos = new BlockPos(nbt.getInt(NBT_TARGET_X), nbt.getInt(NBT_TARGET_Y), nbt.getInt(NBT_TARGET_Z));
         }
+        this.targetStructure = nbt.contains(NBT_TARGET_STRUCTURE) ? nbt.getString(NBT_TARGET_STRUCTURE) : null;
         this.entityData.set(DATA_STARTED_AT, this.level().getGameTime() - this.animationTick);
     }
 
@@ -500,5 +526,8 @@ public class WormholeSpawnAnimation extends Entity {
         nbt.putInt(NBT_TARGET_X, targetPos.getX());
         nbt.putInt(NBT_TARGET_Y, targetPos.getY());
         nbt.putInt(NBT_TARGET_Z, targetPos.getZ());
+        if (targetStructure != null) {
+            nbt.putString(NBT_TARGET_STRUCTURE, targetStructure);
+        }
     }
 }

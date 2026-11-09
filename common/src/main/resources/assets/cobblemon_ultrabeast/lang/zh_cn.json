@@ -27,10 +27,11 @@
   "message.ultrabeasts.occupied": "§c究极空间已被占用。",
   "message.ultrabeasts.evicted": "§5究极空间已离你而去……",
   "command.ultrabeasts.wormhole.spawn.occupied": "已有玩家占据究极空间，请等待其离开。",
+  "command.ultrabeasts.wormhole.target.success": "%1$s 召唤了通往%2$s的虫洞",
+  "command.ultrabeasts.wormhole.target.unknown": "未知的究极异兽：%s",
   "command.ultrabeasts.wormhole.clear.evicted": "§7已将 %s 名玩家送回主世界。",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "虫洞开启",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "虫洞嗡鸣",
-  "cinematic.cobblemon_ultrabeast.skip": "按空格键跳过",
   "cinematic.cobblemon_ultrabeast.encounter.heading": "发现究极异兽",
   "title.ultrabeasts.wormhole_impact": "究极之洞",
   "title.ultrabeasts.wormhole_impact.subtitle": "现实正在被撕裂"

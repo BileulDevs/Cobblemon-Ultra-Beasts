@@ -27,10 +27,11 @@
   "message.ultrabeasts.occupied": "§cThe Ultra-Space is already occupied.",
   "message.ultrabeasts.evicted": "§5The Ultra-Space moved on without you..",
   "command.ultrabeasts.wormhole.spawn.occupied": "A player already holds the Ultra-Space. Wait for them to leave.",
+  "command.ultrabeasts.wormhole.target.success": "Wormhole to %2$s summoned by %1$s",
+  "command.ultrabeasts.wormhole.target.unknown": "Unknown Ultra Beast: %s",
   "command.ultrabeasts.wormhole.clear.evicted": "§7Sent %s player(s) back to the overworld.",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Wormhole opens",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Wormhole hums",
-  "cinematic.cobblemon_ultrabeast.skip": "Press Space to skip",
   "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultra Beast sighted",
   "title.ultrabeasts.wormhole_impact": "Ultra Wormhole",
   "title.ultrabeasts.wormhole_impact.subtitle": "Reality is tearing open"

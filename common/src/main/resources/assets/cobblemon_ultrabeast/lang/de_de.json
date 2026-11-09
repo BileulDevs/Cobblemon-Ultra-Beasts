@@ -27,10 +27,11 @@
   "message.ultrabeasts.occupied": "§cDer Ultraraum ist bereits besetzt.",
   "message.ultrabeasts.evicted": "§5Der Ultraraum hat sich ohne dich weiterbewegt …",
   "command.ultrabeasts.wormhole.spawn.occupied": "Ein Spieler hält den Ultraraum bereits besetzt. Warte, bis er ihn verlässt.",
+  "command.ultrabeasts.wormhole.target.success": "Wurmloch zu %2$s beschworen von %1$s",
+  "command.ultrabeasts.wormhole.target.unknown": "Unbekannte Ultrabestie: %s",
   "command.ultrabeasts.wormhole.clear.evicted": "§7%s Spieler in die Oberwelt zurückgeschickt.",
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Wurmloch öffnet sich",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Wurmloch summt",
-  "cinematic.cobblemon_ultrabeast.skip": "Leertaste zum Überspringen",
   "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultrabestie gesichtet",
   "title.ultrabeasts.wormhole_impact": "Ultrapforte",
   "title.ultrabeasts.wormhole_impact.subtitle": "Die Realität reißt auf"

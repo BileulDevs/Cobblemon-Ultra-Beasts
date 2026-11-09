@@ -29,16 +29,18 @@ import java.util.List;
 /**
  * The encounter cinematic played on arrival in Ultra-Space, between two black bands:
  * <ol>
- *   <li>black, until the structure's chunks have reached the client;</li>
- *   <li>the structure: a fly-over for open layouts, a walkthrough at head height for
- *   enclosed ones (see {@link CinematicStyle}), with the dimension's name;</li>
+ *   <li>a moment of black: the structure is already fully drawn by then, Minecraft's own
+ *   terrain loading screen having been held until it was ({@link ArrivalLoadingScreen});</li>
+ *   <li>the structure: a walkthrough at head height toward the beast, or a fly-over for a
+ *   structure that asks for one (see {@link CinematicStyle}), with the dimension's name;</li>
  *   <li>a cut through black to a close-up dollying toward the Ultra Beast;</li>
  *   <li>the cry: the beast roars, plays its cry animation if it has one, and the camera
  *   zooms on its head with a shake while its name appears;</li>
  *   <li>a fade back to the player's own eyes.</li>
  * </ol>
  * The game camera films the world behind this transparent screen ({@link EncounterCamera});
- * the HUD and the hand are hidden meanwhile. Space, Enter or Escape skip to the fade out.
+ * the HUD and the hand are hidden meanwhile. Space, Enter or Escape skip to the fade out; no
+ * hint says so on screen, on purpose, so nothing written breaks the shots.
  * <p>
  * Runs entirely on the client clock: the server only sends the opening order. A screen
  * rather than an overlay so the player cannot walk or open their inventory meanwhile.
@@ -50,16 +52,11 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
     // ---- timeline, in milliseconds ---------------------------------------
 
     /**
-     * Shortest black hold before the first shot, even when the chunks are already there: the
-     * teleport just happened and the world needs a moment to render its first frames.
+     * Black hold before the first shot. The structure is already drawn when the cinematic
+     * opens; this only leaves the camera one or two frames at the first shot's position
+     * under the black, so the cut from the loading screen does not show the jump.
      */
-    private static final long HOLD_MIN_MS = 800L;
-
-    /**
-     * Longest black hold while waiting for chunks. Past it the cinematic plays anyway, on
-     * whatever has arrived, rather than leaving the player in the dark.
-     */
-    private static final long HOLD_MAX_MS = 5_000L;
+    private static final long HOLD_MS = 150L;
 
     /** Fade from black into the first shot. */
     private static final long FADE_IN_MS = 800L;
@@ -122,14 +119,25 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
     /** Scale of the beast's name. 2 reads as a title without overflowing the band. */
     private static final float SPECIES_SCALE = 2.0F;
 
-    /** Gap between the heading and the beast's name, in GUI pixels. */
-    private static final int LINE_GAP = 4;
+    /**
+     * Gap between the heading and the beast's name, in GUI pixels. Negative on purpose: the
+     * font's line height includes two empty pixels under the letters, so -1 still leaves a
+     * visible gap, and raises the name, which sat too low in the band.
+     */
+    private static final int LINE_GAP = -1;
+
+    /**
+     * How far below the band's centre the heading and the name sit, in GUI pixels. Centred
+     * exactly, the heading looked glued to the band's top edge: the scaled name carries more
+     * empty space below its letters than above. Higher pushes the name toward the screen's
+     * bottom edge.
+     */
+    private static final int WORDS_DROP = 3;
 
     private static final int BLACK = 0xFF000000;
     private static final int HEADING_COLOR = 0xD8D8D8;
     private static final int SPECIES_COLOR = 0xFFB000;
     private static final int PLACE_COLOR = 0xE0C8FF;
-    private static final int HINT_COLOR = 0x909090;
 
     /**
      * Below this alpha, text is not drawn: the font treats an alpha under 4 as opaque, which
@@ -154,7 +162,6 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
     /** Height of a standing player's eyes, where the walkthrough's collision rays start. */
     private static final double PLAYER_EYE_HEIGHT = 1.62;
 
-    private static final Component SKIP_HINT = Component.translatable("cinematic.cobblemon_ultrabeast.skip");
     private static final Component ENCOUNTER_HEADING =
             Component.translatable("cinematic.cobblemon_ultrabeast.encounter.heading");
     private static final Component PLACE_NAME = Component.translatable("dimension.cobblemon_ultrabeast.ultra_space");
@@ -232,14 +239,11 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
 
     // ---- timeline --------------------------------------------------------
 
-    /** Starts the structure shot once the chunks are in, and ends the cinematic on time. */
+    /** Starts the structure shot after the short black hold, and ends the cinematic on time. */
     private void advance(long now) {
         if (rollingAt < 0) {
-            long held = now - openedAt;
-            if (held >= HOLD_MAX_MS || (held >= HOLD_MIN_MS && chunksReady())) {
-                rollingAt = now;
-                resolveWalkthrough();
-                introSound = playUi(ModSounds.ENCOUNTER_INTRO, 1.0F);
+            if (now - openedAt >= HOLD_MS) {
+                startRolling(now);
             }
             return;
         }
@@ -248,16 +252,11 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
         }
     }
 
-    /** Whether the structure's centre and the beast's chunk have reached the client. */
-    private boolean chunksReady() {
-        ClientLevel level = Minecraft.getInstance().level;
-        if (level == null) {
-            return false;
-        }
-        BlockPos min = payload.structureMin();
-        BlockPos max = payload.structureMax();
-        BlockPos centre = new BlockPos((min.getX() + max.getX()) / 2, min.getY(), (min.getZ() + max.getZ()) / 2);
-        return level.hasChunkAt(centre) && level.hasChunkAt(BlockPos.containing(payload.beastPos()));
+    /** Leaves the black hold: the structure shot starts, with its music. */
+    private void startRolling(long now) {
+        rollingAt = now;
+        resolveWalkthrough();
+        introSound = playUi(ModSounds.ENCOUNTER_INTRO, 1.0F);
     }
 
     /** Plays a sound unattenuated: the camera is far from where it would be placed. */
@@ -301,13 +300,16 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
     // ---- camera ----------------------------------------------------------
 
     /**
-     * This frame's shot. Null during the black hold and the second half of the fade out,
-     * where the player's own view is shown (under black, so the swap is not seen).
+     * This frame's shot. Null during the hold and the second half of the fade out, where the
+     * player's own view is shown, under the black.
      */
     @Override
     public EncounterCamera.Shot shot(float partialTick) {
         long now = Util.getMillis();
-        if (rollingAt < 0 || closingProgress(now) >= 0.5F) {
+        if (closingProgress(now) >= 0.5F) {
+            return null;
+        }
+        if (rollingAt < 0) {
             return null;
         }
         long t = now - rollingAt;
@@ -570,7 +572,6 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
 
         // Words stay above the veil, so they read through the fades; the fade out hides them.
         float wordsAlpha = closing < 0 ? 1.0F : 1.0F - closing * 2.0F;
-        drawText(graphics, SKIP_HINT, width / 2, (band - font.lineHeight) / 2, HINT_COLOR, wordsAlpha, 1.0F);
         drawWords(graphics, now, band, wordsAlpha);
     }
 
@@ -595,7 +596,7 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
             return;
         }
         int speciesHeight = Math.round(lineHeight * SPECIES_SCALE);
-        int top = height - band + (band - lineHeight - LINE_GAP - speciesHeight) / 2;
+        int top = height - band + (band - lineHeight - LINE_GAP - speciesHeight) / 2 + WORDS_DROP;
         drawText(graphics, ENCOUNTER_HEADING, width / 2, top, HEADING_COLOR,
                 alpha * Math.min(1.0F, sinceHeading / (float) WORDS_FADE_MS), 1.0F);
 
