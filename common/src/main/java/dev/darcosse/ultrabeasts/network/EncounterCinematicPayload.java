@@ -1,6 +1,8 @@
 package dev.darcosse.ultrabeasts.network;
 
 import dev.darcosse.ultrabeasts.UltraBeasts;
+import dev.darcosse.ultrabeasts.cinematic.CinematicShot;
+import dev.darcosse.ultrabeasts.cinematic.CinematicShotStore;
 import dev.darcosse.ultrabeasts.dimension.UltraSpaceStructureManager.CinematicStyle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -8,6 +10,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Server-to-client order to play the encounter cinematic on arrival in Ultra-Space.
@@ -24,18 +29,22 @@ import net.minecraft.world.phys.Vec3;
  *                     the entity has not reached the client
  * @param speciesKey   translation key of the Ultra Beast's species name
  * @param style        how the structure is presented before the close-up
+ * @param shots        the tour's shots, in order; empty unless {@code style} is
+ *                     {@link CinematicStyle#TOUR}
  */
 public record EncounterCinematicPayload(BlockPos structureMin, BlockPos structureMax, Vec3 beastPos,
-                                        String speciesKey, CinematicStyle style) implements CustomPacketPayload {
+                                        String speciesKey, CinematicStyle style,
+                                        List<CinematicShot> shots) implements CustomPacketPayload {
 
     /**
      * Wire format version, checked before anything else is read. The format is positional:
      * adding, removing or reordering a field without raising this makes a peer of another
      * build read garbage without an error. Raise it on every change to write/read.
      * <p>
-     * History: 1 had structureMin, structureMax, beastPos, speciesKey. 2 added style.
+     * History: 1 had structureMin, structureMax, beastPos, speciesKey. 2 added style. 3 added
+     * shots, and the TOUR style.
      */
-    public static final int WIRE_VERSION = 2;
+    public static final int WIRE_VERSION = 3;
 
     /**
      * Longest translation key accepted, in characters. Species keys are short; the bound
@@ -60,6 +69,10 @@ public record EncounterCinematicPayload(BlockPos structureMin, BlockPos structur
         buf.writeDouble(beastPos.z);
         buf.writeUtf(speciesKey, MAX_KEY_LENGTH);
         buf.writeByte(style.ordinal());
+        buf.writeVarInt(shots.size());
+        for (CinematicShot shot : shots) {
+            shot.write(buf);
+        }
     }
 
     /** MUST list the same fields in the same order as {@link #write}. */
@@ -84,8 +97,18 @@ public record EncounterCinematicPayload(BlockPos structureMin, BlockPos structur
             throw new IllegalStateException("Ultra-Beasts: unknown encounter cinematic style " + styleOrdinal
                     + ". Server and client run different versions of the mod.");
         }
+        int shotCount = buf.readVarInt();
+        if (shotCount < 0 || shotCount > CinematicShotStore.MAX_SHOTS) {
+            // Bounded before allocating: a forged count must not make the client loop for long.
+            throw new IllegalStateException("Ultra-Beasts: encounter cinematic with " + shotCount
+                    + " shots, at most " + CinematicShotStore.MAX_SHOTS + " expected.");
+        }
+        List<CinematicShot> shots = new ArrayList<>(shotCount);
+        for (int i = 0; i < shotCount; i++) {
+            shots.add(CinematicShot.read(buf));
+        }
         return new EncounterCinematicPayload(structureMin, structureMax, new Vec3(x, y, z), speciesKey,
-                styles[styleOrdinal]);
+                styles[styleOrdinal], List.copyOf(shots));
     }
 
     /** Type under which each loader registers this payload. */

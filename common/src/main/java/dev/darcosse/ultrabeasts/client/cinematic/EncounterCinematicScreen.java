@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.client.entity.PokemonClientDelegate;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.darcosse.ultrabeasts.UltraBeasts;
+import dev.darcosse.ultrabeasts.cinematic.CinematicShot;
 import dev.darcosse.ultrabeasts.dimension.UltraSpaceStructureManager.CinematicStyle;
 import dev.darcosse.ultrabeasts.network.EncounterCinematicPayload;
 import dev.darcosse.ultrabeasts.registry.ModDimensions;
@@ -31,8 +32,9 @@ import java.util.List;
  * <ol>
  *   <li>a moment of black: the structure is already fully drawn by then, Minecraft's own
  *   terrain loading screen having been held until it was ({@link ArrivalLoadingScreen});</li>
- *   <li>the structure: a walkthrough at head height toward the beast, or a fly-over for a
- *   structure that asks for one (see {@link CinematicStyle}), with the dimension's name;</li>
+ *   <li>the structure, with the dimension's name: a tour of authored shots of the scenery
+ *   and its details, cut through black, or a walkthrough at head height toward the beast, or
+ *   a fly-over (see {@link CinematicStyle});</li>
  *   <li>a cut through black to a close-up dollying toward the Ultra Beast;</li>
  *   <li>the cry: the beast roars, plays its cry animation if it has one, and the camera
  *   zooms on its head with a shake while its name appears;</li>
@@ -63,15 +65,29 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
 
     /**
      * Length of the structure shot (fly-over or walkthrough), fades included. Shorter makes
-     * the fly-over's 120° turn feel hurried.
+     * the fly-over's 120° turn feel hurried. A tour lasts the sum of its shots instead.
      */
     private static final long INTRO_MS = 6_500L;
 
     /** Fade to black and back between the structure shot and the close-up (each way). */
     private static final long SHOT_FADE_MS = 450L;
 
+    /**
+     * Fade to black and back between two shots of a tour (each way). Shorter than the cut to
+     * the close-up: the tour's shots last about three seconds, and half a second of black on
+     * each side would eat a third of them.
+     */
+    private static final long TOUR_CUT_FADE_MS = 250L;
+
     /** Length of the dolly toward the beast, from the cut to the cry. */
     private static final long DOLLY_MS = 3_500L;
+
+    /**
+     * Length of the intro music, {@code encounter_intro.ogg}, in milliseconds. Built to end on
+     * the cry after a 6.5 s structure shot; a longer tour delays its start so it still does.
+     * Must follow the sound file if it is replaced.
+     */
+    private static final long INTRO_MUSIC_MS = INTRO_MS + DOLLY_MS;
 
     /** Blend from the dolly to the head shot, once the cry starts. Longer loses the punch. */
     private static final long HEAD_ZOOM_MS = 450L;
@@ -92,11 +108,6 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
     /** Fade out: black covers the shot, then lifts off the player's own view. */
     private static final long FADE_OUT_MS = 800L;
 
-    /** When the cry starts, from the start of the structure shot. */
-    private static final long CRY_AT_MS = INTRO_MS + DOLLY_MS;
-
-    /** When the cinematic ends by itself, from the start of the structure shot. */
-    private static final long END_AT_MS = CRY_AT_MS + CRY_HOLD_MS;
 
     // ---- cry -------------------------------------------------------------
 
@@ -185,6 +196,21 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
     private boolean hidingGui;
 
     private SimpleSoundInstance introSound;
+    /** Whether the intro music was started; it may start after the structure shot does. */
+    private boolean musicStarted;
+
+    // Timeline, from the start of the structure shot: fixed for the walkthrough and the
+    // fly-over, the tour's own length otherwise.
+    /** Length of the structure shot, or of the whole tour. */
+    private final long introMs;
+    /** When the cry starts. */
+    private final long cryAtMs;
+    /** When the cinematic ends by itself. */
+    private final long endAtMs;
+    /** When the intro music starts, so it ends on the cry. */
+    private final long musicAtMs;
+    /** End of each tour shot, cumulated; empty outside a tour. The last one is {@link #introMs}. */
+    private final long[] tourShotEnds;
     private SimpleSoundInstance roarSound;
 
     // Walkthrough path, resolved when the structure shot starts (chunks are in by then).
@@ -209,6 +235,18 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
         this.plan = new EncounterPlan(payload.structureMin(), payload.structureMax(), payload.beastPos(), viewerPos);
         this.speciesName = Component.translatable(payload.speciesKey());
         this.openedAt = Util.getMillis();
+
+        List<CinematicShot> shots = payload.shots();
+        this.tourShotEnds = new long[isTour() ? shots.size() : 0];
+        long cumulated = 0L;
+        for (int i = 0; i < tourShotEnds.length; i++) {
+            cumulated += shots.get(i).durationMs();
+            tourShotEnds[i] = cumulated;
+        }
+        this.introMs = tourShotEnds.length > 0 ? cumulated : INTRO_MS;
+        this.cryAtMs = introMs + DOLLY_MS;
+        this.endAtMs = cryAtMs + CRY_HOLD_MS;
+        this.musicAtMs = Math.max(0L, cryAtMs - INTRO_MUSIC_MS);
 
         Minecraft minecraft = Minecraft.getInstance();
         this.previousHideGui = minecraft.options.hideGui;
@@ -247,7 +285,11 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
             }
             return;
         }
-        if (closingAt < 0 && now - rollingAt >= END_AT_MS) {
+        if (!musicStarted && now - rollingAt >= musicAtMs) {
+            musicStarted = true;
+            introSound = playUi(ModSounds.ENCOUNTER_INTRO, 1.0F);
+        }
+        if (closingAt < 0 && now - rollingAt >= endAtMs) {
             beginClose(now);
         }
     }
@@ -256,7 +298,6 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
     private void startRolling(long now) {
         rollingAt = now;
         resolveWalkthrough();
-        introSound = playUi(ModSounds.ENCOUNTER_INTRO, 1.0F);
     }
 
     /** Plays a sound unattenuated: the camera is far from where it would be placed. */
@@ -283,11 +324,21 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
         if (t < FADE_IN_MS) {
             return 1.0F - t / (float) FADE_IN_MS;
         }
-        if (t >= INTRO_MS - SHOT_FADE_MS && t < INTRO_MS) {
-            return (t - (INTRO_MS - SHOT_FADE_MS)) / (float) SHOT_FADE_MS;
+        if (t >= introMs - SHOT_FADE_MS && t < introMs) {
+            return (t - (introMs - SHOT_FADE_MS)) / (float) SHOT_FADE_MS;
         }
-        if (t >= INTRO_MS && t < INTRO_MS + SHOT_FADE_MS) {
-            return 1.0F - (t - INTRO_MS) / (float) SHOT_FADE_MS;
+        if (t >= introMs && t < introMs + SHOT_FADE_MS) {
+            return 1.0F - (t - introMs) / (float) SHOT_FADE_MS;
+        }
+        // Cuts between the tour's shots; the last end is the cut to the close-up, above.
+        for (int i = 0; i < tourShotEnds.length - 1; i++) {
+            long cut = tourShotEnds[i];
+            if (t >= cut - TOUR_CUT_FADE_MS && t < cut) {
+                return (t - (cut - TOUR_CUT_FADE_MS)) / (float) TOUR_CUT_FADE_MS;
+            }
+            if (t >= cut && t < cut + TOUR_CUT_FADE_MS) {
+                return 1.0F - (t - cut) / (float) TOUR_CUT_FADE_MS;
+            }
         }
         return 0.0F;
     }
@@ -313,7 +364,10 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
             return null;
         }
         long t = now - rollingAt;
-        if (t < INTRO_MS) {
+        if (t < introMs) {
+            if (tourShotEnds.length > 0) {
+                return tourShot(t);
+            }
             double progress = t / (double) INTRO_MS;
             if (payload.style() == CinematicStyle.WALKTHROUGH && walkStart != null) {
                 return EncounterPlan.walkthrough(progress, walkStart, walkEnd, beastAim(partialTick));
@@ -323,9 +377,9 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
 
         resolveCloseUp();
         Vec3 aim = beastAim(partialTick);
-        double dolly = Math.min(1.0, (t - INTRO_MS) / (double) DOLLY_MS);
+        double dolly = Math.min(1.0, (t - introMs) / (double) DOLLY_MS);
         EncounterCamera.Shot closeUp = EncounterPlan.closeUp(dolly, aim, viewerPos, beastSize, closeUpFree);
-        if (t < CRY_AT_MS) {
+        if (t < cryAtMs) {
             return closeUp;
         }
 
@@ -333,12 +387,35 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
             cried = true;
             cry();
         }
-        long sinceCry = t - CRY_AT_MS;
+        long sinceCry = t - cryAtMs;
         return EncounterPlan.headZoom(
                 sinceCry / (double) HEAD_ZOOM_MS,
                 sinceCry / (double) SHAKE_MS,
                 sinceCry / 1000.0,
                 closeUp, beastHead(partialTick), viewerPos, beastWidth, headFree);
+    }
+
+    /** Whether this cinematic plays a tour of authored shots. */
+    private boolean isTour() {
+        return payload.style() == CinematicStyle.TOUR && !payload.shots().isEmpty();
+    }
+
+    /**
+     * The tour's camera at {@code t} milliseconds into it: the shot playing then, at its own
+     * progress. Cost: a scan of at most {@code CinematicShotStore.MAX_SHOTS} entries per frame.
+     */
+    private EncounterCamera.Shot tourShot(long t) {
+        List<CinematicShot> shots = payload.shots();
+        long start = 0L;
+        for (int i = 0; i < tourShotEnds.length; i++) {
+            if (t < tourShotEnds[i] || i == tourShotEnds.length - 1) {
+                CinematicShot.Pose pose = shots.get(i).at((t - start) / (double) (tourShotEnds[i] - start));
+                // Any point along the view line will do: the camera only needs a direction.
+                return new EncounterCamera.Shot(pose.position(), pose.position().add(pose.direction()));
+            }
+            start = tourShotEnds[i];
+        }
+        throw new IllegalStateException("Unreachable: the loop returns on its last entry.");
     }
 
     /** The close-up's aim point: the beast if it is on the client, its spawn point otherwise. */
@@ -585,13 +662,13 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
         }
         long t = now - rollingAt;
         int lineHeight = font.lineHeight;
-        if (t < INTRO_MS - SHOT_FADE_MS) {
+        if (t < introMs - SHOT_FADE_MS) {
             float fade = Math.min(1.0F, t / (float) FADE_IN_MS);
             int top = height - band + (band - lineHeight) / 2;
             drawText(graphics, PLACE_NAME, width / 2, top, PLACE_COLOR, alpha * fade, 1.0F);
             return;
         }
-        long sinceHeading = t - INTRO_MS - HEADING_DELAY_MS;
+        long sinceHeading = t - introMs - HEADING_DELAY_MS;
         if (sinceHeading < 0) {
             return;
         }
@@ -600,7 +677,7 @@ public final class EncounterCinematicScreen extends Screen implements EncounterC
         drawText(graphics, ENCOUNTER_HEADING, width / 2, top, HEADING_COLOR,
                 alpha * Math.min(1.0F, sinceHeading / (float) WORDS_FADE_MS), 1.0F);
 
-        long sinceName = t - CRY_AT_MS - NAME_DELAY_MS;
+        long sinceName = t - cryAtMs - NAME_DELAY_MS;
         if (sinceName >= 0) {
             drawText(graphics, speciesName, width / 2, top + lineHeight + LINE_GAP, SPECIES_COLOR,
                     alpha * Math.min(1.0F, sinceName / (float) WORDS_FADE_MS), SPECIES_SCALE);

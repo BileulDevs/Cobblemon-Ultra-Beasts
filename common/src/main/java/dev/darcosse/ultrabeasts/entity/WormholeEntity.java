@@ -3,10 +3,13 @@ package dev.darcosse.ultrabeasts.entity;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.pokemon.Species;
 import dev.darcosse.ultrabeasts.UltraBeasts;
+import dev.darcosse.ultrabeasts.cinematic.CinematicShot;
+import dev.darcosse.ultrabeasts.cinematic.CinematicShotStore;
 import dev.darcosse.ultrabeasts.config.ConfigManager;
 import dev.darcosse.ultrabeasts.dimension.ReturnPointStore;
 import dev.darcosse.ultrabeasts.dimension.UltraSpaceState;
 import dev.darcosse.ultrabeasts.dimension.UltraSpaceStructureManager;
+import dev.darcosse.ultrabeasts.dimension.UltraSpaceStructureManager.CinematicStyle;
 import dev.darcosse.ultrabeasts.handler.UltraSpaceSession;
 import dev.darcosse.ultrabeasts.network.EncounterCinematicPayload;
 import dev.darcosse.ultrabeasts.platform.Platform;
@@ -32,6 +35,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -404,7 +408,7 @@ public class WormholeEntity extends AbstractPortalEntity {
         // Right after the teleport, not with the delayed sounds: the client must get it while
         // its terrain loading screen is still up, to hold that screen until the structure is
         // drawn. Packets keep their order, so it lands after the dimension change.
-        sendEncounterCinematic(player, ultraSpace, structureKey, config);
+        sendEncounterCinematic(player, ultraSpace, structureKey);
 
         ServerScheduler.schedule(ARRIVAL_SOUND_DELAY, () -> {
             // The player may have left, died or logged out during the delay.
@@ -422,22 +426,38 @@ public class WormholeEntity extends AbstractPortalEntity {
     /**
      * Tells the player's client they arrived, with what the encounter cinematic needs. The
      * client holds its terrain loading screen until the structure is drawn, then plays the
-     * cinematic, or a plain fade if the player turned it off.
+     * cinematic, or a plain fade if the player turned it off. Also replays it on demand, for
+     * {@code /ultrabeasts cinematic <ultra_beast> play}.
+     *
+     * @param structureKey the structure standing in Ultra-Space; the caller vouches for it
+     * @return false if there was nothing to film, and nothing was sent
      */
-    private static void sendEncounterCinematic(ServerPlayer player, ServerLevel ultraSpace, String structureKey,
-                                               UltraSpaceStructureManager.StructureConfig config) {
+    public static boolean sendEncounterCinematic(ServerPlayer player, ServerLevel ultraSpace, String structureKey) {
         UltraSpaceState.Region bounds = UltraSpaceStructureManager.structureBounds(ultraSpace);
+        UltraSpaceStructureManager.StructureConfig config = UltraSpaceStructureManager.getConfig(structureKey);
         Species species = PokemonSpecies.getByName(structureKey);
-        if (bounds == null || species == null) {
+        if (bounds == null || config == null || species == null) {
             // Nothing to film: no structure, or no Ultra Beast was spawned (unknown species).
-            return;
+            return false;
+        }
+
+        CinematicStyle style = config.cinematic();
+        List<CinematicShot> shots = List.of();
+        if (style == CinematicStyle.TOUR) {
+            shots = CinematicShotStore.load(player.getServer(), structureKey);
+            if (shots.isEmpty()) {
+                // No shots, recorded or bundled: the walk toward the beast still shows something.
+                style = CinematicStyle.WALKTHROUGH;
+            }
         }
 
         Platform.get().sendToPlayer(player, new EncounterCinematicPayload(
                 bounds.min(), bounds.max(),
                 UltraSpaceStructureManager.ultraBeastSpawnPoint(ultraSpace, config.pokemonSpawn()),
                 species.getTranslationKey(),
-                config.cinematic()));
+                style,
+                shots));
+        return true;
     }
 
     /** Completes the "Into the Unknown" advancement, whatever criteria it declares. */

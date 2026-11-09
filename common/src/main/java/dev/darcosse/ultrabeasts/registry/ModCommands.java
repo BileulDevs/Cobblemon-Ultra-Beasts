@@ -21,8 +21,9 @@ import java.util.Locale;
 
 /**
  * The {@code /ultrabeasts} command tree: config reload and info, and operator tools to spawn
- * wormholes, to a random or a chosen Ultra Beast, or clear them. Server side; every message goes through a translation key resolved by
- * the receiving client.
+ * wormholes, to a random or a chosen Ultra Beast, or clear them, and to record the encounter
+ * cinematic's shots ({@link CinematicCommands}). Server side; every message goes through a
+ * translation key resolved by the receiving client.
  */
 public final class ModCommands {
 
@@ -59,6 +60,8 @@ public final class ModCommands {
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
                                         UltraSpaceStructureManager.structureKeys(), builder))
                                 .executes(ModCommands::summonWormholeTo)))
+                .then(CinematicCommands.build()
+                        .requires(source -> source.hasPermission(OPERATOR_LEVEL)))
         );
     }
 

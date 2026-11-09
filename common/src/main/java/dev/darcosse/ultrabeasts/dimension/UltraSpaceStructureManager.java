@@ -92,11 +92,17 @@ public final class UltraSpaceStructureManager {
          */
         FLY_OVER,
         /**
-         * A glide from the arrival point toward the beast, at head height: first made for
-         * nihilego's cave, now the style of every structure, the walk toward the beast
-         * reading better than a view from the sky.
+         * A glide from the arrival point toward the beast, at head height: for nihilego's
+         * cave, where only the way in is worth filming. Also what a TOUR falls back on when
+         * its structure has no shots.
          */
-        WALKTHROUGH
+        WALKTHROUGH,
+        /**
+         * A few authored shots of the scenery and its details, then the close-up: see
+         * {@link dev.darcosse.ultrabeasts.cinematic.CinematicShotStore} for where the shots
+         * come from and {@code /ultrabeasts cinematic} to record them.
+         */
+        TOUR
     }
 
     /**
@@ -117,12 +123,12 @@ public final class UltraSpaceStructureManager {
             CinematicStyle cinematic
     ) {
         /**
-         * A structure presented with the default style, the walkthrough. Changing the default
-         * here changes the cinematic of every structure that does not name its own style.
+         * A structure presented with the default style, the tour. Changing the default here
+         * changes the cinematic of every structure that does not name its own style.
          */
         public StructureConfig(List<StructurePart> parts, BlockPos pokemonSpawn, BlockPos playerSpawn,
                                BlockPos returnPortalSpawn) {
-            this(parts, pokemonSpawn, playerSpawn, returnPortalSpawn, CinematicStyle.WALKTHROUGH);
+            this(parts, pokemonSpawn, playerSpawn, returnPortalSpawn, CinematicStyle.TOUR);
         }
     }
 
@@ -134,7 +140,9 @@ public final class UltraSpaceStructureManager {
                     ),
                     new BlockPos(26, 86, 20),
                     new BlockPos(26, 86, 76),
-                    new BlockPos(26, 87, 83)
+                    new BlockPos(26, 87, 83),
+                    // The beast lies at the back of a cave: the walk in already shows it best.
+                    CinematicStyle.WALKTHROUGH
             ),
             "kartana", new StructureConfig(
                     List.of(
