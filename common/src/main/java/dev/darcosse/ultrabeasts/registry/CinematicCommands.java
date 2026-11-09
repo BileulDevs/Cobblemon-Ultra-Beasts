@@ -38,6 +38,9 @@ import java.util.UUID;
  * The first shot recorded for a structure replaces its defaults rather than adding to them:
  * a tour is designed as a whole. Recording happens in spectator mode, flying through the
  * structure. Server side; shots are saved by {@link CinematicShotStore}.
+ * <p>
+ * Not registered at the moment: see {@code ModCommands.CINEMATIC_COMMANDS_ENABLED}. Shots
+ * then come only from the bundled files or from hand-written config files.
  */
 final class CinematicCommands {
 

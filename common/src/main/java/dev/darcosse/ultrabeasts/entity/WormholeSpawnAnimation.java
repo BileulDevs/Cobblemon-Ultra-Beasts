@@ -156,7 +156,7 @@ public class WormholeSpawnAnimation extends Entity {
 
     /**
      * Server side: structure the wormhole will lead to, or null for a random one. Set by
-     * {@code /ultrabeasts wormhole <ultra_beast>}, handed to the wormhole when it spawns.
+     * {@code /ultrabeasts wormhole spawn <ultra_beast>}, handed to the wormhole when it spawns.
      */
     private String targetStructure;
 

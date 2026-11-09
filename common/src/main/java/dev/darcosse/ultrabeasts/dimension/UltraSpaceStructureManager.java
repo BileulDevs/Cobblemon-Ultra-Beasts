@@ -549,7 +549,7 @@ public final class UltraSpaceStructureManager {
 
     /**
      * Every structure key, which is also the Ultra Beast's species name. Immutable; backs the
-     * suggestions of {@code /ultrabeasts wormhole <ultra_beast>}.
+     * suggestions of {@code /ultrabeasts wormhole spawn <ultra_beast>}.
      */
     public static List<String> structureKeys() {
         return STRUCTURE_KEYS;

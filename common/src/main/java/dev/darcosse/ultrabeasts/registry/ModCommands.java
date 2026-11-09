@@ -4,6 +4,7 @@ import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.pokemon.Species;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import dev.darcosse.ultrabeasts.config.ConfigManager;
 import dev.darcosse.ultrabeasts.dimension.UltraSpaceStructureManager;
@@ -21,8 +22,9 @@ import java.util.Locale;
 
 /**
  * The {@code /ultrabeasts} command tree: config reload and info, and operator tools to spawn
- * wormholes, to a random or a chosen Ultra Beast, or clear them, and to record the encounter
- * cinematic's shots ({@link CinematicCommands}). Server side; every message goes through a
+ * wormholes, to a random or a chosen Ultra Beast, or clear them. The tool to record the
+ * encounter cinematic's shots ({@link CinematicCommands}) is switched off, see
+ * {@link #CINEMATIC_COMMANDS_ENABLED}. Server side; every message goes through a
  * translation key resolved by the receiving client.
  */
 public final class ModCommands {
@@ -40,9 +42,16 @@ public final class ModCommands {
     private ModCommands() {
     }
 
+    /**
+     * Whether {@code /ultrabeasts cinematic} is registered. Off: the shot recording tool is
+     * kept in the code ({@link CinematicCommands}) but reachable by nobody, operators included.
+     * Turning it on exposes it to operators again; no other change is needed.
+     */
+    private static final boolean CINEMATIC_COMMANDS_ENABLED = false;
+
     /** Registers the command tree. Called by each loader from its own command registration event. */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("ultrabeasts")
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("ultrabeasts")
                 .then(Commands.literal("reload")
                         .requires(source -> source.hasPermission(OPERATOR_LEVEL))
                         .executes(ModCommands::reloadConfig))
@@ -51,18 +60,18 @@ public final class ModCommands {
                 .then(Commands.literal("wormhole")
                         .requires(source -> source.hasPermission(OPERATOR_LEVEL))
                         .then(Commands.literal("spawn")
-                                .executes(ModCommands::summonWormhole))
+                                .executes(ModCommands::summonWormhole)
+                                .then(Commands.argument(ULTRA_BEAST_ARGUMENT, StringArgumentType.word())
+                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                                UltraSpaceStructureManager.structureKeys(), builder))
+                                        .executes(ModCommands::summonWormholeTo)))
                         .then(Commands.literal("clear")
-                                .executes(ModCommands::clearWormhole))
-                        // Next to the literals: brigadier tries "spawn" and "clear" first, and
-                        // no Ultra Beast bears either name.
-                        .then(Commands.argument(ULTRA_BEAST_ARGUMENT, StringArgumentType.word())
-                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                        UltraSpaceStructureManager.structureKeys(), builder))
-                                .executes(ModCommands::summonWormholeTo)))
-                .then(CinematicCommands.build()
-                        .requires(source -> source.hasPermission(OPERATOR_LEVEL)))
-        );
+                                .executes(ModCommands::clearWormhole)));
+        if (CINEMATIC_COMMANDS_ENABLED) {
+            root.then(CinematicCommands.build()
+                    .requires(source -> source.hasPermission(OPERATOR_LEVEL)));
+        }
+        dispatcher.register(root);
     }
 
     /**
@@ -134,7 +143,7 @@ public final class ModCommands {
     }
 
     /**
-     * {@code /ultrabeasts wormhole <ultra_beast>}: opens a wormhole on the executing player that
+     * {@code /ultrabeasts wormhole spawn <ultra_beast>}: opens a wormhole on the executing player that
      * leads to the given Ultra Beast's structure. Meant for testing one structure on demand.
      */
     private static int summonWormholeTo(CommandContext<CommandSourceStack> context) {

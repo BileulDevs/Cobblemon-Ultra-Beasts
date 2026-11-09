@@ -120,7 +120,7 @@ public class WormholeEntity extends AbstractPortalEntity {
 
     /**
      * Server side: structure this wormhole leads to, or null for a random one. Set by
-     * {@code /ultrabeasts wormhole <ultra_beast>}, through the arrival animation.
+     * {@code /ultrabeasts wormhole spawn <ultra_beast>}, through the arrival animation.
      */
     private String targetStructure;
 
@@ -217,7 +217,7 @@ public class WormholeEntity extends AbstractPortalEntity {
     /**
      * Opens a wormhole on the player, bypassing the random roll. Backs
      * {@code /ultrabeasts wormhole spawn} (random destination) and
-     * {@code /ultrabeasts wormhole <ultra_beast>} (forced destination).
+     * {@code /ultrabeasts wormhole spawn <ultra_beast>} (forced destination).
      *
      * @param structureKey structure the wormhole leads to, or null for a random one; must be
      *                     a key of {@link UltraSpaceStructureManager#structureKeys()}
