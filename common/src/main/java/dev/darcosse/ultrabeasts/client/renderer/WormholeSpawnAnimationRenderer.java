@@ -13,78 +13,43 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
-import java.util.Random;
-
 /**
- * Draws the tear of the wormhole's arrival ({@link WormholeSpawnAnimation}), facing the
+ * Draws the singularity of the wormhole's arrival ({@link WormholeSpawnAnimation}), facing the
  * camera like the portal itself:
  * <ul>
- *   <li>a jagged line of light, growing from the centre;</li>
- *   <li>which splits into a lens onto the void beyond, edged with light;</li>
- *   <li>which turns half a revolution while rounding into the portal's disc, then dissolves
- *   into the swirl of particles that the animation ramps up meanwhile.</li>
+ *   <li>a black core with a glowing rim, growing, ringed by arcs of light that spin faster
+ *   and faster, with ripples of light falling into it;</li>
+ *   <li>the core shrinking to a point as the arcs close in;</li>
+ *   <li>a shockwave racing out while the portal's disc snaps open, a little too wide, then
+ *   dissolving into the swirl.</li>
  * </ul>
- * The void is a texture of its own: the portal's {@code wormhole.png} is fully transparent
- * (it has been since 3.x), so the portal itself is only its particles, and the tear has to
- * fade out rather than hand over to a disc.
  * <p>
- * Client side only. Cost while an animation plays: about 25 textured quads and 150 glow
- * quads per frame; nothing at all otherwise.
+ * Client side only. Cost while an animation plays: at most ~50 textured quads and ~900 glow
+ * quads per frame (rings are 48 segments times 3 layers); nothing at all otherwise.
  */
 public class WormholeSpawnAnimationRenderer extends EntityRenderer<WormholeSpawnAnimation> {
 
     /**
-     * The void seen through the tear: a radial gradient, dark at the centre and pink at the
-     * rim, laid on the lens' own shape so it turns with it.
+     * The void: a radial gradient, dark at the centre and pink at the rim. Mapped onto discs
+     * so the rim of the texture falls on the rim of the shape.
      */
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(UltraBeasts.MOD_ID, "textures/entity/wormhole_tear.png");
 
-    /**
-     * The light of the crack: white, fading out across its width, tinted per layer by the
-     * vertex colour. A texture rather than the vanilla lightning render type used at first:
-     * that one did not show in game, while this goes through the same entity translucent
-     * path as the lens, which does.
-     */
+    /** Light: white, fading out across its width, tinted per layer by the vertex colour. */
     private static final ResourceLocation GLOW_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(UltraBeasts.MOD_ID, "textures/entity/wormhole_glow.png");
-
-    /** Segments of the crack. More is smoother at the lens' tips, but each is several quads. */
-    private static final int SEGMENTS = 24;
-
-    /**
-     * Largest sideways kink of the crack, in blocks. Above ~0.25 the lens edges cross each
-     * other where two kinks meet at the start of the opening.
-     */
-    private static final double CRACK_JITTER = 0.16;
-
-    /** Half-width of the fully opened lens at its middle, in blocks, before it rounds out. */
-    private static final double LENS_HALF_WIDTH = 0.55;
-
-    /**
-     * Exponent of the lens profile: 0.5 gives an ellipse, 1 a pointed almond. In between,
-     * the lens reads as a tear without looking like an eye.
-     */
-    private static final double LENS_PROFILE_EXPONENT = 0.75;
 
     /** Radius of the portal's disc, in blocks: its quad is 1 unit drawn at scale 2. */
     private static final double PORTAL_RADIUS = 1.0;
 
-    /**
-     * Share of the opening it takes the lens to become fully opaque. The texture fades in
-     * rather than popping, but is solid well before the spiral starts.
-     */
-    private static final double LENS_FADE_SHARE = 0.6;
-
-    /**
-     * Share of the spiral after which the lens starts dissolving, reaching nothing at the
-     * end, while the swirl particles ramp up. Lower hands over to the swirl sooner.
-     */
-    private static final double DISSOLVE_FROM = 0.5;
+    /** Segments of a full circle. More is rounder, each costs a few quads per glow layer. */
+    private static final int CIRCLE_SEGMENTS = 48;
 
     /**
      * Glow layers, widest first: half-width in blocks, then red, green, blue, alpha. Alpha
-     * blended, not additive, so they also read against a bright daytime sky.
+     * blended, not additive, so they also read against a bright daytime sky. Shared with the
+     * tear of 4.1.
      */
     private static final float[][] GLOW_LAYERS = {
             {0.22f, 0.55f, 0.75f, 1.0f, 0.45f},  // azure halo
@@ -93,24 +58,59 @@ public class WormholeSpawnAnimationRenderer extends EntityRenderer<WormholeSpawn
     };
 
     /**
-     * Amplitude of the crack's live tremor, in blocks, and its speed in radians per tick.
-     * It makes the line crackle like an electric arc while it tears, and calms down as the
-     * lens opens. Above ~0.06 the line looks like it is wobbling rather than sparking.
+     * Share of the settling phase after which the disc starts dissolving into the swirl,
+     * reaching nothing at the end. Lower hands over to the swirl sooner.
      */
-    private static final double TREMOR_AMPLITUDE = 0.04;
-    private static final double TREMOR_SPEED = 1.9;
+    private static final double DISSOLVE_FROM = 0.5;
 
-    /** Flicker speed of the glow, in radians per tick, and its depth (share of the alpha). */
-    private static final float FLICKER_SPEED = 2.3f;
-    private static final float FLICKER_DEPTH = 0.25f;
+    /** Radius of the core at the end of the gathering, in blocks. */
+    private static final double CORE_MAX_RADIUS = 0.45;
 
+    /** Radius of the core at the end of the collapse: a point, not quite nothing. */
+    private static final double CORE_MIN_RADIUS = 0.04;
+
+    /** Number of arcs spinning around the core. */
+    private static final int ARC_COUNT = 3;
+
+    /** Angular span of one arc, in radians (about 100 degrees). */
+    private static final double ARC_SPAN = 1.75;
+
+    /**
+     * Distance of the arcs from the core's centre, in core radii, at the start of the
+     * gathering. They close in on the core during the collapse.
+     */
+    private static final double ARC_DISTANCE = 2.2;
+
+    /**
+     * Spin of the arcs, in radians per tick, at the start and at the end of the collapse. It
+     * accelerates in between, which is what sells the wind-up.
+     */
+    private static final double ARC_SPIN_START = 0.05;
+    private static final double ARC_SPIN_END = 0.9;
+
+    /** Ticks between two infalling ripples, and how long one takes to reach the core. */
+    private static final int RIPPLE_INTERVAL = 10;
+    private static final int RIPPLE_TICKS = 20;
+
+    /** Radius ripples start from, in blocks. */
+    private static final double RIPPLE_START_RADIUS = 3.0;
+
+    /** How far the shockwave reaches, in blocks, and how long it takes. */
+    private static final double SHOCKWAVE_RADIUS = 7.0;
+    private static final int SHOCKWAVE_TICKS = 18;
+
+    /** Width of the shockwave relative to the other glows: a blast, not a line. */
+    private static final float SHOCKWAVE_WIDTH = 2.5f;
+
+    /** Ticks the disc takes to snap open after the impact. */
+    private static final int DISC_OPEN_TICKS = 10;
 
     /** Called by the loader's renderer registration. */
     public WormholeSpawnAnimationRenderer(EntityRendererProvider.Context context) {
         super(context);
     }
 
-    /** Draws the tear for the current moment of the animation. */
+    /** Draws the singularity for the current moment of the animation. */
     @Override
     public void render(WormholeSpawnAnimation entity, float yaw, float partialTick, PoseStack poseStack,
                        MultiBufferSource bufferSource, int light) {
@@ -119,143 +119,150 @@ public class WormholeSpawnAnimationRenderer extends EntityRenderer<WormholeSpawn
             return;
         }
 
-        double grow = WormholeSpawnAnimation.easeOut(t / WormholeSpawnAnimation.CRACK_TICKS);
-        double open = t < WormholeSpawnAnimation.OPEN_AT ? 0.0
-                : WormholeSpawnAnimation.easeInOut((t - WormholeSpawnAnimation.OPEN_AT) / WormholeSpawnAnimation.OPEN_TICKS);
-        double morph = t < WormholeSpawnAnimation.SPIRAL_AT ? 0.0
-                : WormholeSpawnAnimation.easeInOut((t - WormholeSpawnAnimation.SPIRAL_AT) / WormholeSpawnAnimation.SPIRAL_TICKS);
-
-        double fullHalfLength = WormholeSpawnAnimation.CRACK_HALF_LENGTH;
-        double span = t < WormholeSpawnAnimation.OPEN_AT
-                ? fullHalfLength * grow
-                : Mth.lerp(morph, fullHalfLength, PORTAL_RADIUS);
-        // Half a turn while rounding out: on a circle the last part of the turn is invisible,
-        // so the motion settles by itself.
-        double theta = Math.PI * morph;
-        double cos = Math.cos(theta);
-        double sin = Math.sin(theta);
-
-        double[] jitter = jitter(entity.crackSeed());
-        double[] halfWidthNorm = new double[SEGMENTS + 1];
-        double[] yNorm = new double[SEGMENTS + 1];
-        double[] leftX = new double[SEGMENTS + 1];
-        double[] rightX = new double[SEGMENTS + 1];
-        double[] leftY = new double[SEGMENTS + 1];
-        double[] rightY = new double[SEGMENTS + 1];
-        double[] midX = new double[SEGMENTS + 1];
-        double[] midY = new double[SEGMENTS + 1];
-
-        for (int k = 0; k <= SEGMENTS; k++) {
-            double yn = -1.0 + 2.0 * k / SEGMENTS;
-            double y = yn * span;
-            // The kinks fade as the lens rounds out: the disc has a clean edge.
-            double tremor = TREMOR_AMPLITUDE * Math.sin(t * TREMOR_SPEED + k * 1.7) * (1.0 - open);
-            double cx = (jitter[k] + tremor) * (1.0 - morph);
-            double lens = open * LENS_HALF_WIDTH * Math.pow(Math.max(0.0, 1.0 - yn * yn), LENS_PROFILE_EXPONENT);
-            double disc = Math.sqrt(Math.max(0.0, 1.0 - yn * yn)) * PORTAL_RADIUS;
-            double halfWidth = Mth.lerp(morph, lens, disc);
-            // Texture coordinates in the shape's own frame, relative to its length: the
-            // radial texture is sampled along a thin slice while the lens is narrow, and in
-            // full once it is a disc.
-            halfWidthNorm[k] = span > 1.0E-4 ? halfWidth / span : 0.0;
-            yNorm[k] = yn;
-
-            leftX[k] = (cx - halfWidth) * cos - y * sin;
-            leftY[k] = (cx - halfWidth) * sin + y * cos;
-            rightX[k] = (cx + halfWidth) * cos - y * sin;
-            rightY[k] = (cx + halfWidth) * sin + y * cos;
-            midX[k] = cx * cos - y * sin;
-            midY[k] = cx * sin + y * cos;
-        }
-
         poseStack.pushPose();
-        // Same orientation as the portal's quads (AbstractWormholeRenderer), so the texture
-        // seen through the lens is the one the portal will show.
-        poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
-        poseStack.mulPose(Axis.YP.rotationDegrees(180f));
+        faceCamera(poseStack);
         PoseStack.Pose pose = poseStack.last();
 
-        if (open > 0.0) {
-            double fadeIn = Mth.clamp(open / LENS_FADE_SHARE, 0.0, 1.0);
-            double fadeOut = 1.0 - Mth.clamp((morph - DISSOLVE_FROM) / (1.0 - DISSOLVE_FROM), 0.0, 1.0);
-            float alpha = (float) (fadeIn * fadeOut);
-            if (alpha > 0.0f) {
-                drawLens(pose, bufferSource.getBuffer(ModRenderTypes.wormhole(TEXTURE)),
-                        leftX, leftY, rightX, rightY, halfWidthNorm, yNorm, alpha);
-            }
-        }
+        // The void first, then the light: buffers of different render types are flushed in
+        // the order they are first used, so the light is drawn over the void, not under it.
+        VertexConsumer voidBuffer = bufferSource.getBuffer(ModRenderTypes.wormhole(TEXTURE));
 
-        float flicker = 1.0f - FLICKER_DEPTH * (0.5f + 0.5f * Mth.sin(t * FLICKER_SPEED));
-        // Fetched after the lens: buffers of different render types are flushed in the order
-        // they are first used, so the light is drawn over the void, not under it.
-        VertexConsumer glow = bufferSource.getBuffer(ModRenderTypes.wormhole(GLOW_TEXTURE));
-        if (open <= 0.0) {
-            drawGlow(pose, glow, midX, midY, flicker);
+        if (t < WormholeSpawnAnimation.IMPACT_AT) {
+            double core = coreRadius(t);
+            disc(pose, voidBuffer, 0, 0, core, 1.0f);
+
+            VertexConsumer glow = bufferSource.getBuffer(ModRenderTypes.wormhole(GLOW_TEXTURE));
+            double gather = Mth.clamp(t / WormholeSpawnAnimation.GATHER_TICKS, 0.0, 1.0);
+            arc(pose, glow, 0, 0, core, 0, Math.PI * 2, 0.5f, (float) (0.4 + 0.6 * gather));
+            drawArcs(pose, glow, t, core);
+            drawRipples(pose, glow, t, core);
         } else {
-            // The light runs along both lips of the tear, and dies as it becomes the portal.
-            float fade = (float) (1.0 - morph) * flicker;
-            drawGlow(pose, glow, leftX, leftY, fade);
-            drawGlow(pose, glow, rightX, rightY, fade);
+            double since = t - WormholeSpawnAnimation.IMPACT_AT;
+            double settle = since / WormholeSpawnAnimation.SETTLE_TICKS;
+            float alpha = dissolve(settle);
+            double radius = PORTAL_RADIUS * WormholeSpawnAnimation.easeOutBack(since / DISC_OPEN_TICKS);
+            disc(pose, voidBuffer, 0, 0, radius, alpha);
+
+            VertexConsumer glow = bufferSource.getBuffer(ModRenderTypes.wormhole(GLOW_TEXTURE));
+            arc(pose, glow, 0, 0, radius, 0, Math.PI * 2, 0.6f, alpha);
+            if (since < SHOCKWAVE_TICKS) {
+                double wave = since / SHOCKWAVE_TICKS;
+                float fade = (float) (1.0 - wave);
+                double reach = SHOCKWAVE_RADIUS * WormholeSpawnAnimation.easeOut(wave);
+                arc(pose, glow, 0, 0, reach, 0, Math.PI * 2, SHOCKWAVE_WIDTH, fade);
+                // A second, slower wave behind the first gives the blast some depth.
+                arc(pose, glow, 0, 0, reach * 0.65, 0, Math.PI * 2, SHOCKWAVE_WIDTH * 0.5f, fade * 0.6f);
+            }
         }
 
         poseStack.popPose();
     }
 
-    /**
-     * Sideways offsets of the crack's points, from the animation's seed: the same crack on
-     * every client and every frame. Zero at the centre, where the tear starts, and smaller
-     * at the tips.
-     */
-    private static double[] jitter(long seed) {
-        Random random = new Random(seed);
-        double[] offsets = new double[SEGMENTS + 1];
-        for (int k = 0; k <= SEGMENTS; k++) {
-            double yn = -1.0 + 2.0 * k / SEGMENTS;
-            offsets[k] = (random.nextDouble() * 2.0 - 1.0) * CRACK_JITTER * (1.0 - Math.abs(yn) * 0.5);
+    /** Core radius: grows during the gathering, then collapses to a point. */
+    private static double coreRadius(double t) {
+        if (t < WormholeSpawnAnimation.COLLAPSE_AT) {
+            return CORE_MAX_RADIUS * WormholeSpawnAnimation.easeOut(t / WormholeSpawnAnimation.GATHER_TICKS);
         }
-        offsets[SEGMENTS / 2] = 0.0;
-        return offsets;
-    }
-
-    /** Fills the lens between its two edges with the void texture. */
-    private static void drawLens(PoseStack.Pose pose, VertexConsumer consumer,
-                                 double[] leftX, double[] leftY, double[] rightX, double[] rightY,
-                                 double[] halfWidthNorm, double[] yNorm, float alpha) {
-        int a = Math.round(alpha * 255.0f);
-        // NO_OVERLAY below, not the 0 the portal writes: 0 is the red damage row, which only
-        // goes unnoticed on the portal because its texture is transparent.
-        for (int k = 0; k < SEGMENTS; k++) {
-            textured(consumer, pose, leftX[k], leftY[k], -halfWidthNorm[k], yNorm[k], a);
-            textured(consumer, pose, leftX[k + 1], leftY[k + 1], -halfWidthNorm[k + 1], yNorm[k + 1], a);
-            textured(consumer, pose, rightX[k + 1], rightY[k + 1], halfWidthNorm[k + 1], yNorm[k + 1], a);
-            textured(consumer, pose, rightX[k], rightY[k], halfWidthNorm[k], yNorm[k], a);
-        }
+        double collapse = (t - WormholeSpawnAnimation.COLLAPSE_AT) / WormholeSpawnAnimation.COLLAPSE_TICKS;
+        return Mth.lerp(WormholeSpawnAnimation.easeIn(collapse), CORE_MAX_RADIUS, CORE_MIN_RADIUS);
     }
 
     /**
-     * One lens vertex at (x, y), sampling the texture at the shape-relative point (sx, sy),
-     * both in [-1, 1].
+     * The arcs spinning around the core. Their angle is the integral of an accelerating spin,
+     * so they wind up smoothly instead of jumping when the speed changes.
      */
-    private static void textured(VertexConsumer consumer, PoseStack.Pose pose, double x, double y,
-                                 double sx, double sy, int alpha) {
-        consumer.addVertex(pose, (float) x, (float) y, 0f)
-                .setColor(255, 255, 255, alpha)
-                .setUv((float) (sx * 0.5 + 0.5), (float) (sy * 0.5 + 0.5))
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(LightTexture.FULL_BRIGHT)
-                .setNormal(pose, 0f, 0f, 1f);
+    private static void drawArcs(PoseStack.Pose pose, VertexConsumer glow, double t, double core) {
+        double windUp = Mth.clamp(t / WormholeSpawnAnimation.IMPACT_AT, 0.0, 1.0);
+        // Integral of a spin going linearly from START to END over IMPACT_AT ticks.
+        double turned = WormholeSpawnAnimation.IMPACT_AT
+                * (ARC_SPIN_START * windUp + (ARC_SPIN_END - ARC_SPIN_START) * windUp * windUp / 2.0);
+
+        double distance;
+        if (t < WormholeSpawnAnimation.COLLAPSE_AT) {
+            distance = CORE_MAX_RADIUS * ARC_DISTANCE;
+        } else {
+            // Closing in on the shrinking core.
+            double collapse = (t - WormholeSpawnAnimation.COLLAPSE_AT) / WormholeSpawnAnimation.COLLAPSE_TICKS;
+            distance = Mth.lerp(WormholeSpawnAnimation.easeIn(collapse), CORE_MAX_RADIUS * ARC_DISTANCE, core * 1.5);
+        }
+
+        float strength = (float) Mth.clamp(t / 20.0, 0.0, 1.0);
+        for (int i = 0; i < ARC_COUNT; i++) {
+            double start = turned + Math.PI * 2 * i / ARC_COUNT;
+            arc(pose, glow, 0, 0, distance, start, start + ARC_SPAN, 0.45f, strength);
+        }
     }
 
-    /** Draws a glowing polyline as layered ribbons, widest first, each over the previous one. */
-    private static void drawGlow(PoseStack.Pose pose, VertexConsumer consumer, double[] xs, double[] ys, float strength) {
-        if (strength <= 0.0f) {
-            return;
+    /**
+     * Rings of light shrinking into the core, one every {@value #RIPPLE_INTERVAL} ticks: the
+     * pull made visible. They brighten as they fall in.
+     */
+    private static void drawRipples(PoseStack.Pose pose, VertexConsumer glow, double t, double core) {
+        int lastBorn = (int) Math.floor(t / RIPPLE_INTERVAL);
+        for (int n = lastBorn; n >= 0; n--) {
+            double age = t - n * RIPPLE_INTERVAL;
+            if (age >= RIPPLE_TICKS) break;
+            double fall = WormholeSpawnAnimation.easeIn(age / RIPPLE_TICKS);
+            double radius = Mth.lerp(fall, RIPPLE_START_RADIUS, core);
+            arc(pose, glow, 0, 0, radius, 0, Math.PI * 2, 0.35f, (float) (0.15 + 0.5 * fall));
         }
+    }
+
+    // ---- drawing helpers -------------------------------------------------
+
+    /**
+     * Fills a disc with the void texture, as a fan of quads (the render type draws quads; the
+     * fourth corner of each repeats the centre).
+     */
+    private static void disc(PoseStack.Pose pose, VertexConsumer consumer, double cx, double cy,
+                             double radius, float alpha) {
+        if (radius <= 1.0E-4 || alpha <= 0.0f) return;
+        int a = Math.round(Mth.clamp(alpha, 0.0f, 1.0f) * 255.0f);
+        for (int k = 0; k < CIRCLE_SEGMENTS; k++) {
+            double a0 = Math.PI * 2 * k / CIRCLE_SEGMENTS;
+            double a1 = Math.PI * 2 * (k + 1) / CIRCLE_SEGMENTS;
+            textured(consumer, pose, cx, cy, 0.0, 0.0, a);
+            textured(consumer, pose, cx + Math.cos(a0) * radius, cy + Math.sin(a0) * radius,
+                    Math.cos(a0), Math.sin(a0), a);
+            textured(consumer, pose, cx + Math.cos(a1) * radius, cy + Math.sin(a1) * radius,
+                    Math.cos(a1), Math.sin(a1), a);
+            textured(consumer, pose, cx, cy, 0.0, 0.0, a);
+        }
+    }
+
+    /** A glowing circle, or the part of it between two angles (radians). */
+    private static void arc(PoseStack.Pose pose, VertexConsumer consumer, double cx, double cy, double radius,
+                            double fromAngle, double toAngle, float widthScale, float strength) {
+        if (radius <= 1.0E-4 || strength <= 0.0f) return;
+        boolean full = toAngle - fromAngle >= Math.PI * 2 - 1.0E-6;
+        int segments = Math.max(2, (int) Math.ceil(CIRCLE_SEGMENTS * (toAngle - fromAngle) / (Math.PI * 2)));
+        int points = full ? segments : segments + 1;
+        double[] xs = new double[points];
+        double[] ys = new double[points];
+        for (int k = 0; k < points; k++) {
+            double angle = fromAngle + (toAngle - fromAngle) * k / segments;
+            xs[k] = cx + Math.cos(angle) * radius;
+            ys[k] = cy + Math.sin(angle) * radius;
+        }
+        glow(pose, consumer, xs, ys, full, widthScale, strength);
+    }
+
+    /**
+     * Draws a glowing polyline as layered ribbons, widest first, each over the previous one.
+     *
+     * @param closed     joins the last point back to the first
+     * @param widthScale multiplies every layer's width: below 1 for fine lines, above for blasts
+     */
+    private static void glow(PoseStack.Pose pose, VertexConsumer consumer, double[] xs, double[] ys,
+                             boolean closed, float widthScale, float strength) {
+        if (strength <= 0.0f) return;
+        int segments = closed ? xs.length : xs.length - 1;
         for (float[] layer : GLOW_LAYERS) {
-            float halfWidth = layer[0];
-            float alpha = layer[4] * strength;
-            for (int k = 0; k < SEGMENTS; k++) {
-                ribbon(consumer, pose, xs[k], ys[k], xs[k + 1], ys[k + 1], halfWidth,
+            float halfWidth = layer[0] * widthScale;
+            float alpha = Math.min(1.0f, layer[4] * strength);
+            for (int k = 0; k < segments; k++) {
+                int next = (k + 1) % xs.length;
+                ribbon(consumer, pose, xs[k], ys[k], xs[next], ys[next], halfWidth,
                         layer[1], layer[2], layer[3], alpha);
             }
         }
@@ -297,6 +304,35 @@ public class WormholeSpawnAnimationRenderer extends EntityRenderer<WormholeSpawn
                 .setOverlay(OverlayTexture.NO_OVERLAY)
                 .setLight(LightTexture.FULL_BRIGHT)
                 .setNormal(pose, 0f, 0f, 1f);
+    }
+
+    /**
+     * One void-texture vertex at (x, y), sampling the texture at the shape-relative point
+     * (sx, sy), both in [-1, 1]. NO_OVERLAY, not the 0 the portal writes: 0 is the red damage
+     * row, which only goes unnoticed on the portal because its texture is transparent.
+     */
+    private static void textured(VertexConsumer consumer, PoseStack.Pose pose, double x, double y,
+                                 double sx, double sy, int alpha) {
+        consumer.addVertex(pose, (float) x, (float) y, 0f)
+                .setColor(255, 255, 255, alpha)
+                .setUv((float) (sx * 0.5 + 0.5), (float) (sy * 0.5 + 0.5))
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(LightTexture.FULL_BRIGHT)
+                .setNormal(pose, 0f, 0f, 1f);
+    }
+
+    /** Faces the camera, like the portal's own quads, so the hand-over is seamless. */
+    private void faceCamera(PoseStack poseStack) {
+        poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
+        poseStack.mulPose(Axis.YP.rotationDegrees(180f));
+    }
+
+    /**
+     * Opacity of the disc while it hands over to the swirl: full until
+     * {@link #DISSOLVE_FROM} of the settling phase, then down to nothing at its end.
+     */
+    private static float dissolve(double settleProgress) {
+        return (float) (1.0 - Mth.clamp((settleProgress - DISSOLVE_FROM) / (1.0 - DISSOLVE_FROM), 0.0, 1.0));
     }
 
     /** Required by the renderer contract: the void texture. */

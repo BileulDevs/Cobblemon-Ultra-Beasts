@@ -7,7 +7,6 @@ import dev.darcosse.ultrabeasts.registry.ModEntities;
 import dev.darcosse.ultrabeasts.registry.ModParticles;
 import dev.darcosse.ultrabeasts.registry.ModSounds;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.nbt.CompoundTag;
@@ -15,64 +14,55 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.List;
-
 /**
- * Invisible director entity that plays the wormhole's arrival as a tear in space, then
+ * Invisible director entity that plays the wormhole's arrival as a singularity, then
  * replaces itself with a {@link WormholeEntity} at the same spot.
  * <ol>
- *   <li>CRACK ({@value #CRACK_TICKS} ticks): a jagged line of light grows up and down from
- *   a point, crackling;</li>
- *   <li>OPEN ({@value #OPEN_TICKS} ticks): the line splits into a lens that opens onto the
- *   wormhole behind it, throwing out shards of tinted glass;</li>
- *   <li>SPIRAL ({@value #SPIRAL_TICKS} ticks): the lens turns on itself and rounds into the
- *   portal's disc while the swirl starts; the wormhole then takes over seamlessly.</li>
+ *   <li>GATHER ({@value #GATHER_TICKS} ticks): a black core grows, ringed by spinning arcs of
+ *   light, and pulls particles in from all around;</li>
+ *   <li>COLLAPSE ({@value #COLLAPSE_TICKS} ticks): the core shrinks to a point while the arcs
+ *   wind up and close in;</li>
+ *   <li>IMPACT: it bursts. A shockwave races out, particles are flung away and the portal's
+ *   disc snaps open;</li>
+ *   <li>SETTLE ({@value #SETTLE_TICKS} ticks): the disc dissolves into the swirl, and the
+ *   wormhole takes over seamlessly.</li>
  * </ol>
  * The server only keeps time, plays the sounds and spawns the wormhole. Everything visible
- * is drawn by each client: the tear by {@code WormholeSpawnAnimationRenderer}, the particles
- * by {@link #clientTick}. Up to 4.0 the animation sent particle packets every tick and moved
- * 80 block display entities, all through the network; it now sends one start time, once.
+ * is drawn by each client: the shapes by {@code WormholeSpawnAnimationRenderer}, the particles
+ * by {@link #clientTick}.
  */
 public class WormholeSpawnAnimation extends Entity {
 
-    /** Length of the crack phase, in ticks. Shared with the renderer. */
-    public static final int CRACK_TICKS = 60;
+    /** Length of the gathering phase, in ticks. Shared with the renderer. */
+    public static final int GATHER_TICKS = 70;
 
-    /** Length of the opening phase, in ticks. Shared with the renderer. */
-    public static final int OPEN_TICKS = 45;
+    /** Length of the collapse, in ticks. Short: it is the held breath before the blast. */
+    public static final int COLLAPSE_TICKS = 10;
 
-    /** Length of the spiral phase, in ticks. Shared with the renderer. */
-    public static final int SPIRAL_TICKS = 45;
+    /** Length of the settling phase after the impact, in ticks. Shared with the renderer. */
+    public static final int SETTLE_TICKS = 40;
 
-    /** When the opening starts, in ticks since the animation began. */
-    public static final int OPEN_AT = CRACK_TICKS;
-
-    /** When the spiral starts, in ticks since the animation began. */
-    public static final int SPIRAL_AT = CRACK_TICKS + OPEN_TICKS;
+    /** When the collapse starts, in ticks since the animation began. */
+    public static final int COLLAPSE_AT = GATHER_TICKS;
 
     /**
-     * Whole animation, in ticks (7.5 s). The wormhole appears on this tick. The three phases
-     * were 40/30/30 (5 s) at first, too quick to read the crack before it opened.
+     * Tick of the impact: the burst, and where the shake, flash, ground wave, title and impact
+     * sounds fire (see {@link WormholeImpactLevers}). Must stay below {@link #TOTAL_TICKS}:
+     * the entity is gone after that, and the impact would never fire.
      */
-    public static final int TOTAL_TICKS = CRACK_TICKS + OPEN_TICKS + SPIRAL_TICKS;
+    public static final int IMPACT_AT = COLLAPSE_AT + COLLAPSE_TICKS;
 
-    /**
-     * Tick of the impact: where the shake, flash, ground wave, title and impact sounds fire,
-     * and where the darkening and vignette peak (see {@link WormholeImpactLevers}). For the
-     * tear, the moment it splits open. Must stay below {@link #TOTAL_TICKS}: the entity is
-     * gone after that, and the impact would never fire.
-     */
-    public static final int IMPACT_AT = OPEN_AT;
+    /** Whole animation, in ticks (6 s). The wormhole appears on this tick. */
+    public static final int TOTAL_TICKS = IMPACT_AT + SETTLE_TICKS;
 
     /**
      * Tag of the debris block displays of the pre-4.1 animation. No longer created, but
@@ -83,15 +73,8 @@ public class WormholeSpawnAnimation extends Entity {
 
     // ---- sounds ----------------------------------------------------------
 
-    /** Ticks between two crackles of the growing crack. */
-    private static final int CRACKLE_INTERVAL = 7;
-
-    /**
-     * How late after the impact a client that just started seeing the animation still gets
-     * the one-shot impact effects, in ticks. Covers the spawn packet arriving a tick or two
-     * late; raising it makes far-away players get a delayed title.
-     */
-    private static final int IMPACT_LATE_GRACE_TICKS = 5;
+    /** Volume of the animation's sounds. Above 1 only widens the range they are heard at. */
+    private static final float SOUND_VOLUME = 2.0f;
 
     /** Pitch of the impact's sonic boom: below 1 for a deeper, heavier blast. */
     private static final float IMPACT_BOOM_PITCH = 0.6f;
@@ -99,19 +82,10 @@ public class WormholeSpawnAnimation extends Entity {
     /** Pitch of the impact's thunder. Below ~0.5 it turns into a rumble without a crack. */
     private static final float IMPACT_THUNDER_PITCH = 0.8f;
 
-    /** Volume of the animation's sounds. Above 1 only widens the range they are heard at. */
-    private static final float SOUND_VOLUME = 2.0f;
-
     // ---- particles -------------------------------------------------------
 
-    /** Half-height of the full crack, in blocks. Shared with the renderer. */
-    public static final double CRACK_HALF_LENGTH = 1.6;
-
-    /** Glass shards thrown out when the crack splits open. */
-    private static final int SHARD_COUNT = 36;
-
     /**
-     * Swirl particles per tick reached at the end of the spiral, ramping up from none. Same
+     * Swirl particles per tick reached at the end of the animation, ramping up from none. Same
      * rate as the portal's own swirl, so the hand-over is invisible.
      */
     private static final int SWIRL_PER_TICK = 18;
@@ -122,12 +96,41 @@ public class WormholeSpawnAnimation extends Entity {
     /** Radius of the swirl's ring, as on the portal. */
     private static final double SWIRL_RADIUS = 2.0;
 
-    /** Colours of the shards: the pink, lilac and azure of the portal swirl. */
-    private static final List<BlockState> SHARD_STATES = List.of(
-            Blocks.PINK_STAINED_GLASS.defaultBlockState(),
-            Blocks.MAGENTA_STAINED_GLASS.defaultBlockState(),
-            Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState()
-    );
+    /**
+     * How late after the impact a client that just started seeing the animation still gets
+     * the one-shot impact effects, in ticks. Covers the spawn packet arriving a tick or two
+     * late; raising it makes far-away players get a delayed title.
+     */
+    private static final int IMPACT_LATE_GRACE_TICKS = 5;
+
+    /** Ticks between two resonances while the core gathers. */
+    private static final int RESONANCE_INTERVAL = 14;
+
+    /** Particles pulled in per tick at the start of the gathering, and at its end. */
+    private static final int SUCTION_MIN_PER_TICK = 2;
+    private static final int SUCTION_MAX_PER_TICK = 8;
+
+    /** Particles pulled in per tick during the collapse: the last, frantic gulp. */
+    private static final int COLLAPSE_SUCTION_PER_TICK = 10;
+
+    /**
+     * Distance the gathered particles come from, in blocks. Beyond ~6 they start outside
+     * the view of a player standing close.
+     */
+    private static final double SUCTION_MIN_RADIUS = 3.0;
+    private static final double SUCTION_MAX_RADIUS = 6.0;
+
+    /** Distance the collapse's particles come from, in blocks: closer, so they arrive in time. */
+    private static final double COLLAPSE_SUCTION_RADIUS = 2.5;
+
+    /** Particles flung out in every direction by the burst. */
+    private static final int BURST_SPHERE_PARTICLES = 60;
+
+    /** Particles flung out flat, in the plane facing the viewer: the visible shockwave front. */
+    private static final int BURST_RING_PARTICLES = 32;
+
+    /** Speed of the burst's particles, in blocks per tick. */
+    private static final double BURST_SPEED = 0.45;
 
     /**
      * Game time the animation started at, synced to clients with the spawn packet. Sent once:
@@ -147,14 +150,14 @@ public class WormholeSpawnAnimation extends Entity {
 
     /** Ticks played, server side. */
     private int animationTick = 0;
+
     private BlockPos targetPos = BlockPos.ZERO;
+
     private boolean finalEntitySpawned = false;
+
     /** Server side: whether the entity was moved onto its target since it was created or loaded. */
     private boolean positioned;
 
-    /** Client side: one-shot effects already played, so a missed tick never replays them. */
-    private boolean shardsThrown;
-    private boolean flashShown;
     /** Client side: set if the particles cannot be spawned, so the error is logged once. */
     private boolean particlesUnavailable;
 
@@ -170,13 +173,16 @@ public class WormholeSpawnAnimation extends Entity {
      */
     private Vec3 swirlAxis;
 
+    /** Client side: the burst's particles already thrown. */
+    private boolean burstThrown;
+
     /** Constructor used by the entity type factory, and when loading from a save. */
     public WormholeSpawnAnimation(EntityType<? extends WormholeSpawnAnimation> type, Level level) {
         super(type, level);
         this.noPhysics = true;
         this.setInvulnerable(true);
-        // The tear reaches 1.6 blocks above and below the entity, beyond its hitbox: without
-        // this, it vanished as soon as the entity's feet left the screen.
+        // What is drawn reaches well beyond the entity's 1-block hitbox: without this, it
+        // vanished as soon as the entity's feet left the screen.
         this.noCulling = true;
     }
 
@@ -188,8 +194,8 @@ public class WormholeSpawnAnimation extends Entity {
     }
 
     /**
-     * Where the tear opens and the wormhole appears: the centre of the target block, at its
-     * bottom, exactly where {@link #spawnFinalWormhole} places the wormhole.
+     * Where the animation plays and the wormhole appears: the centre of the target block, at
+     * its bottom, exactly where {@link #spawnFinalWormhole} places the wormhole.
      */
     public static Vec3 centreOf(BlockPos target) {
         return Vec3.atBottomCenterOf(target);
@@ -208,10 +214,10 @@ public class WormholeSpawnAnimation extends Entity {
     }
 
     /**
-     * Seed of this animation's crack shape: the same on every client, since the UUID comes
+     * Seed of this animation's random details: the same on every client, since the UUID comes
      * with the spawn packet, and different for every wormhole.
      */
-    public long crackSeed() {
+    public long visualSeed() {
         return this.getUUID().getLeastSignificantBits();
     }
 
@@ -219,7 +225,6 @@ public class WormholeSpawnAnimation extends Entity {
     @Override
     public void tick() {
         super.tick();
-
         if (this.level() instanceof ServerLevel level) {
             serverTick(level);
         } else {
@@ -243,14 +248,15 @@ public class WormholeSpawnAnimation extends Entity {
         animationTick++;
 
         if (animationTick == 1) {
-            play(level, SoundEvents.AMETHYST_BLOCK_RESONATE, 0.6f);
-        } else if (animationTick < OPEN_AT && animationTick % CRACKLE_INTERVAL == 0) {
-            play(level, SoundEvents.AMETHYST_BLOCK_CHIME, 0.5f + this.random.nextFloat() * 0.6f);
-        } else if (animationTick == OPEN_AT) {
-            play(level, SoundEvents.GLASS_BREAK, 0.5f);
-            // Registered since 4.0 but never played until now.
+            // The nether portal's whoosh, slowed down: a long breath in.
+            play(level, SoundEvents.PORTAL_TRIGGER, 0.5f);
+        } else if (animationTick < COLLAPSE_AT && animationTick % RESONANCE_INTERVAL == 0) {
+            // Rising pitch: the pull gets stronger.
+            play(level, SoundEvents.AMETHYST_BLOCK_RESONATE, 0.5f + 0.7f * animationTick / COLLAPSE_AT);
+        } else if (animationTick == COLLAPSE_AT) {
+            play(level, SoundEvents.BEACON_DEACTIVATE, 0.5f);
+        } else if (animationTick == IMPACT_AT) {
             play(level, ModSounds.WORMHOLE_ANIMATION_SPAWN, 1.0f);
-        } else if (animationTick == SPIRAL_AT) {
             play(level, SoundEvents.BEACON_ACTIVATE, 1.4f);
         }
 
@@ -265,7 +271,7 @@ public class WormholeSpawnAnimation extends Entity {
 
     /**
      * The impact's boom and thunder, heard much farther than the animation's own sounds.
-     * Server side, so every player in range hears it, including those who do not see the tear.
+     * Server side, so every player in range hears it, including those who do not see it.
      */
     private void playImpactSounds(ServerLevel level) {
         float volume = WormholeImpactLevers.IMPACT_SOUND_VOLUME;
@@ -273,8 +279,8 @@ public class WormholeSpawnAnimation extends Entity {
         level.playSound(null, targetPos, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.WEATHER, volume, IMPACT_THUNDER_PITCH);
     }
 
-    /** Plays a sound at the tear for every nearby player. */
-    private void play(ServerLevel level, net.minecraft.sounds.SoundEvent sound, float pitch) {
+    /** Plays a sound at the animation for every nearby player. */
+    private void play(ServerLevel level, SoundEvent sound, float pitch) {
         level.playSound(null, targetPos, sound, SoundSource.HOSTILE, SOUND_VOLUME, pitch);
     }
 
@@ -296,10 +302,10 @@ public class WormholeSpawnAnimation extends Entity {
     // ---- client ----------------------------------------------------------
 
     /**
-     * Spawns this tick's particles. Each phase adds its own: sparks at the growing tips, a
-     * burst of glass shards when the crack splits, then the swirl ramping up to the portal's
-     * rate. Cost: a few particles per tick, at most {@value #SWIRL_PER_TICK} plus three,
-     * during seven and a half seconds.
+     * Spawns this tick's particles: suction while the core gathers and collapses, one burst
+     * on the impact, then the swirl ramping up to the portal's rate. Cost: at most
+     * {@value #COLLAPSE_SUCTION_PER_TICK} particles per tick, plus a one-off burst of
+     * {@value #BURST_SPHERE_PARTICLES} + {@value #BURST_RING_PARTICLES}.
      */
     private void clientTick() {
         // Before the particle guard: a broken particle sprite must not cost the impact.
@@ -313,29 +319,19 @@ public class WormholeSpawnAnimation extends Entity {
         double z = this.getZ();
 
         try {
-            if (t < OPEN_AT) {
-                double reach = CRACK_HALF_LENGTH * easeOut(t / CRACK_TICKS);
-                // Both tips, where the crack is tearing.
-                level.addParticle(ParticleTypes.ELECTRIC_SPARK, x, y + reach, z, 0, 0.02, 0);
-                level.addParticle(ParticleTypes.ELECTRIC_SPARK, x, y - reach, z, 0, -0.02, 0);
-                if (this.random.nextInt(3) == 0) {
-                    level.addParticle(ParticleTypes.END_ROD, x, y + (this.random.nextDouble() * 2 - 1) * reach, z,
-                            0, 0, 0);
-                }
-            } else if (t < SPIRAL_AT) {
-                if (!shardsThrown) {
-                    shardsThrown = true;
-                    throwShards(level, x, y, z);
-                }
-                level.addParticle(ParticleTypes.END_ROD,
-                        x, y + (this.random.nextDouble() * 2 - 1) * CRACK_HALF_LENGTH, z,
-                        (this.random.nextDouble() - 0.5) * 0.05, 0, (this.random.nextDouble() - 0.5) * 0.05);
+            if (t < COLLAPSE_AT) {
+                double progress = t / GATHER_TICKS;
+                int count = SUCTION_MIN_PER_TICK
+                        + Mth.floor((SUCTION_MAX_PER_TICK - SUCTION_MIN_PER_TICK) * progress);
+                suck(level, x, y, z, count, SUCTION_MIN_RADIUS, SUCTION_MAX_RADIUS);
+            } else if (t < IMPACT_AT) {
+                suck(level, x, y, z, COLLAPSE_SUCTION_PER_TICK, COLLAPSE_SUCTION_RADIUS, COLLAPSE_SUCTION_RADIUS);
             } else {
-                spawnSwirl(level, x, y, z, (t - SPIRAL_AT) / SPIRAL_TICKS);
-                if (!flashShown && t >= TOTAL_TICKS - 1) {
-                    flashShown = true;
-                    level.addParticle(ParticleTypes.FLASH, x, y, z, 0, 0, 0);
+                if (!burstThrown) {
+                    burstThrown = true;
+                    burst(level, x, y, z);
                 }
+                spawnSwirl(level, x, y, z, (t - IMPACT_AT) / SETTLE_TICKS);
             }
         } catch (RuntimeException e) {
             // Same safeguard as the portal swirl: a missing particle sprite throws from the
@@ -378,18 +374,57 @@ public class WormholeSpawnAnimation extends Entity {
     }
 
     /**
-     * Throws tinted glass shards out of the crack, in every direction. Vanilla's block
-     * particles keep the direction but pick their own small speed, and fall with gravity.
+     * Axis of the swirl, frozen towards the viewer (see {@link #reportToImpactEffects}).
+     * Also gives the plane facing the viewer, for particle effects that must lie flat in the
+     * picture like the renderer's drawing.
      */
-    private void throwShards(Level level, double x, double y, double z) {
-        for (int i = 0; i < SHARD_COUNT; i++) {
-            BlockState state = SHARD_STATES.get(this.random.nextInt(SHARD_STATES.size()));
-            double along = (this.random.nextDouble() * 2 - 1) * CRACK_HALF_LENGTH;
-            double angle = this.random.nextDouble() * Math.PI * 2;
-            level.addParticle(new BlockParticleOption(ParticleTypes.BLOCK, state),
-                    x, y + along, z,
-                    Math.cos(angle), 0.3 + this.random.nextDouble() * 0.5, Math.sin(angle));
+    private Vec3 swirlAxis() {
+        return swirlAxis != null ? swirlAxis : PortalSwirl.DEFAULT_AXIS;
+    }
+
+    /**
+     * Particles converging on the core from a random sphere. Vanilla's portal particle takes
+     * its velocity as the offset it starts from and flies back to the point it was spawned at,
+     * which is exactly a pull towards the centre.
+     */
+    private void suck(Level level, double x, double y, double z, int count, double minRadius, double maxRadius) {
+        for (int i = 0; i < count; i++) {
+            Vec3 direction = randomDirection();
+            double distance = minRadius + this.random.nextDouble() * (maxRadius - minRadius);
+            level.addParticle(ParticleTypes.PORTAL, x, y, z,
+                    direction.x * distance, direction.y * distance, direction.z * distance);
         }
+    }
+
+    /**
+     * The impact's burst: reverse-portal particles flung out in every direction, a flat ring
+     * of light racing out in the plane facing the viewer, and a flash at the core.
+     */
+    private void burst(Level level, double x, double y, double z) {
+        for (int i = 0; i < BURST_SPHERE_PARTICLES; i++) {
+            Vec3 direction = randomDirection();
+            double speed = BURST_SPEED * (0.5 + this.random.nextDouble() * 0.5);
+            level.addParticle(ParticleTypes.REVERSE_PORTAL, x, y, z,
+                    direction.x * speed, direction.y * speed, direction.z * speed);
+        }
+
+        Vec3[] plane = PortalSwirl.basis(swirlAxis());
+        for (int i = 0; i < BURST_RING_PARTICLES; i++) {
+            double angle = Math.PI * 2 * i / BURST_RING_PARTICLES;
+            Vec3 direction = plane[0].scale(Math.cos(angle)).add(plane[1].scale(Math.sin(angle)));
+            level.addParticle(ParticleTypes.END_ROD, x, y, z,
+                    direction.x * BURST_SPEED, direction.y * BURST_SPEED, direction.z * BURST_SPEED);
+        }
+
+        level.addParticle(ParticleTypes.FLASH, x, y, z, 0, 0, 0);
+    }
+
+    /** A uniformly random unit vector. */
+    private Vec3 randomDirection() {
+        double yComponent = this.random.nextDouble() * 2.0 - 1.0;
+        double angle = this.random.nextDouble() * Math.PI * 2;
+        double horizontal = Math.sqrt(1.0 - yComponent * yComponent);
+        return new Vec3(Math.cos(angle) * horizontal, yComponent, Math.sin(angle) * horizontal);
     }
 
     /**
@@ -401,13 +436,12 @@ public class WormholeSpawnAnimation extends Entity {
         if (type == null) return;
 
         int count = Mth.ceil(SWIRL_PER_TICK * Mth.clamp(progress, 0.0, 1.0));
-        Vec3 axis = swirlAxis != null ? swirlAxis : PortalSwirl.DEFAULT_AXIS;
-        PortalSwirl.spawn(level, type, new Vec3(x, y, z), axis,
+        PortalSwirl.spawn(level, type, new Vec3(x, y, z), swirlAxis(),
                 SWIRL_RING_OFFSET, WormholeEntity.PARTICLE_DESTINATION_Z_OFFSET,
                 SWIRL_RADIUS, count, this.random);
     }
 
-    /** Fast start, slow end: the crack tears quickly, then slows as it reaches full length. */
+    /** Fast start, slow end. */
     public static double easeOut(double t) {
         double c = 1.0 - Mth.clamp(t, 0.0, 1.0);
         return 1.0 - c * c * c;
@@ -417,6 +451,24 @@ public class WormholeSpawnAnimation extends Entity {
     public static double easeInOut(double t) {
         double c = Mth.clamp(t, 0.0, 1.0);
         return c * c * (3.0 - 2.0 * c);
+    }
+
+    /** Slow start, fast end. */
+    public static double easeIn(double t) {
+        double c = Mth.clamp(t, 0.0, 1.0);
+        return c * c * c;
+    }
+
+    /** Overshoot of {@link #easeOutBack}: 1.7 shoots ~10 % past the end. 0 disables it. */
+    private static final double OVERSHOOT = 1.7;
+
+    /**
+     * Fast start that shoots a little past 1 before settling: the disc bursts open slightly
+     * too wide, then snaps back.
+     */
+    public static double easeOutBack(double t) {
+        double c = Mth.clamp(t, 0.0, 1.0) - 1.0;
+        return 1.0 + c * c * ((OVERSHOOT + 1.0) * c + OVERSHOOT);
     }
 
     // ---- data ------------------------------------------------------------
