@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Um buraco de minhoca se abre",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Um buraco de minhoca zumbe",
   "cinematic.cobblemon_ultrabeast.skip": "Pressione Espaço para pular",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultracriatura avistada"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultracriatura avistada",
+  "title.ultrabeasts.wormhole_impact": "Ultraburaco",
+  "title.ultrabeasts.wormhole_impact.subtitle": "A realidade está se rasgando"
 }

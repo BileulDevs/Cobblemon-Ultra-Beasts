@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "ワームホールが開く",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "ワームホールがうなる",
   "cinematic.cobblemon_ultrabeast.skip": "スペースキーでスキップ",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "ウルトラビースト発見"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "ウルトラビースト発見",
+  "title.ultrabeasts.wormhole_impact": "ウルトラホール",
+  "title.ultrabeasts.wormhole_impact.subtitle": "現実が引き裂かれていく"
 }

@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Un wormhole si apre",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Un wormhole ronza",
   "cinematic.cobblemon_ultrabeast.skip": "Premi Spazio per saltare",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultracreatura avvistata"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultracreatura avvistata",
+  "title.ultrabeasts.wormhole_impact": "Ultravarco",
+  "title.ultrabeasts.wormhole_impact.subtitle": "La realtà si squarcia"
 }

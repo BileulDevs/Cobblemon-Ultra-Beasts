@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Se abre un agujero de gusano",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Zumba un agujero de gusano",
   "cinematic.cobblemon_ultrabeast.skip": "Pulsa Espacio para saltar",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultraente avistado"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultraente avistado",
+  "title.ultrabeasts.wormhole_impact": "Ultraumbral",
+  "title.ultrabeasts.wormhole_impact.subtitle": "La realidad se desgarra"
 }

@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "웜홀이 열림",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "웜홀이 웅웅거림",
   "cinematic.cobblemon_ultrabeast.skip": "스페이스 바를 눌러 건너뛰기",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "울트라비스트 발견"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "울트라비스트 발견",
+  "title.ultrabeasts.wormhole_impact": "울트라홀",
+  "title.ultrabeasts.wormhole_impact.subtitle": "현실이 찢어지고 있다"
 }

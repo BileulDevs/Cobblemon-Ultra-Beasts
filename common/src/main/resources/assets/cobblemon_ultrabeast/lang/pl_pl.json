@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Tunel się otwiera",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Tunel buczy",
   "cinematic.cobblemon_ultrabeast.skip": "Naciśnij Spację, aby pominąć",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "Wykryto Ultra Bestię"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Wykryto Ultra Bestię",
+  "title.ultrabeasts.wormhole_impact": "Ultratunel",
+  "title.ultrabeasts.wormhole_impact.subtitle": "Rzeczywistość się rozdziera"
 }

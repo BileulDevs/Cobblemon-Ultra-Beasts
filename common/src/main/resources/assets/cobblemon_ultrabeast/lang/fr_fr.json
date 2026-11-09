@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Un trou de ver s'ouvre",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Un trou de ver vrombit",
   "cinematic.cobblemon_ultrabeast.skip": "Appuyez sur Espace pour passer",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultra-Chimère repérée"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultra-Chimère repérée",
+  "title.ultrabeasts.wormhole_impact": "Ultra-Brèche",
+  "title.ultrabeasts.wormhole_impact.subtitle": "La réalité se déchire"
 }

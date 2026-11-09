@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Wormhole opens",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Wormhole hums",
   "cinematic.cobblemon_ultrabeast.skip": "Press Space to skip",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultra Beast sighted"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultra Beast sighted",
+  "title.ultrabeasts.wormhole_impact": "Ultra Wormhole",
+  "title.ultrabeasts.wormhole_impact.subtitle": "Reality is tearing open"
 }

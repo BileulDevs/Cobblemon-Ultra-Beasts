@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Wurmloch öffnet sich",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Wurmloch summt",
   "cinematic.cobblemon_ultrabeast.skip": "Leertaste zum Überspringen",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultrabestie gesichtet"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Ultrabestie gesichtet",
+  "title.ultrabeasts.wormhole_impact": "Ultrapforte",
+  "title.ultrabeasts.wormhole_impact.subtitle": "Die Realität reißt auf"
 }

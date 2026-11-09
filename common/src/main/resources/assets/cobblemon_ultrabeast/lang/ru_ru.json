@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "Открывается червоточина",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "Червоточина гудит",
   "cinematic.cobblemon_ultrabeast.skip": "Нажмите Пробел, чтобы пропустить",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "Замечено Ультрачудовище"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "Замечено Ультрачудовище",
+  "title.ultrabeasts.wormhole_impact": "Ультраворота",
+  "title.ultrabeasts.wormhole_impact.subtitle": "Реальность разрывается"
 }

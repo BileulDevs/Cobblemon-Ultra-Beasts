@@ -1,6 +1,8 @@
 package dev.darcosse.ultrabeasts.entity;
 
 import dev.darcosse.ultrabeasts.UltraBeasts;
+import dev.darcosse.ultrabeasts.fx.WormholeFxBridge;
+import dev.darcosse.ultrabeasts.fx.WormholeImpactLevers;
 import dev.darcosse.ultrabeasts.registry.ModEntities;
 import dev.darcosse.ultrabeasts.registry.ModParticles;
 import dev.darcosse.ultrabeasts.registry.ModSounds;
@@ -65,6 +67,14 @@ public class WormholeSpawnAnimation extends Entity {
     public static final int TOTAL_TICKS = CRACK_TICKS + OPEN_TICKS + SPIRAL_TICKS;
 
     /**
+     * Tick of the impact: where the shake, flash, ground wave, title and impact sounds fire,
+     * and where the darkening and vignette peak (see {@link WormholeImpactLevers}). For the
+     * tear, the moment it splits open. Must stay below {@link #TOTAL_TICKS}: the entity is
+     * gone after that, and the impact would never fire.
+     */
+    public static final int IMPACT_AT = OPEN_AT;
+
+    /**
      * Tag of the debris block displays of the pre-4.1 animation. No longer created, but
      * still cleaned up at server start ({@code ModEvents.cleanUp}): a world saved mid
      * animation by 4.0 keeps them otherwise, floating forever.
@@ -75,6 +85,19 @@ public class WormholeSpawnAnimation extends Entity {
 
     /** Ticks between two crackles of the growing crack. */
     private static final int CRACKLE_INTERVAL = 7;
+
+    /**
+     * How late after the impact a client that just started seeing the animation still gets
+     * the one-shot impact effects, in ticks. Covers the spawn packet arriving a tick or two
+     * late; raising it makes far-away players get a delayed title.
+     */
+    private static final int IMPACT_LATE_GRACE_TICKS = 5;
+
+    /** Pitch of the impact's sonic boom: below 1 for a deeper, heavier blast. */
+    private static final float IMPACT_BOOM_PITCH = 0.6f;
+
+    /** Pitch of the impact's thunder. Below ~0.5 it turns into a rumble without a crack. */
+    private static final float IMPACT_THUNDER_PITCH = 0.8f;
 
     /** Volume of the animation's sounds. Above 1 only widens the range they are heard at. */
     private static final float SOUND_VOLUME = 2.0f;
@@ -92,6 +115,9 @@ public class WormholeSpawnAnimation extends Entity {
      * rate as the portal's own swirl, so the hand-over is invisible.
      */
     private static final int SWIRL_PER_TICK = 18;
+
+    /** Plane of the swirl's ring along its axis, one block towards the viewer, as on the portal. */
+    private static final double SWIRL_RING_OFFSET = 1.0;
 
     /** Radius of the swirl's ring, as on the portal. */
     private static final double SWIRL_RADIUS = 2.0;
@@ -131,6 +157,18 @@ public class WormholeSpawnAnimation extends Entity {
     private boolean flashShown;
     /** Client side: set if the particles cannot be spawned, so the error is logged once. */
     private boolean particlesUnavailable;
+
+    /** Client side: start of the arrival already reported to the impact effects. */
+    private boolean arrivalReported;
+
+    /** Client side: impact already reported, so it fires once even if a tick is skipped. */
+    private boolean impactReported;
+
+    /**
+     * Client side: axis of the swirl, towards the local player when the animation appeared to
+     * them, then fixed. Handed to the wormhole through {@link PortalSwirl#remember}.
+     */
+    private Vec3 swirlAxis;
 
     /** Constructor used by the entity type factory, and when loading from a save. */
     public WormholeSpawnAnimation(EntityType<? extends WormholeSpawnAnimation> type, Level level) {
@@ -216,9 +254,23 @@ public class WormholeSpawnAnimation extends Entity {
             play(level, SoundEvents.BEACON_ACTIVATE, 1.4f);
         }
 
+        if (animationTick == IMPACT_AT && WormholeImpactLevers.IMPACT_SOUND) {
+            playImpactSounds(level);
+        }
+
         if (animationTick >= TOTAL_TICKS) {
             spawnFinalWormhole(level);
         }
+    }
+
+    /**
+     * The impact's boom and thunder, heard much farther than the animation's own sounds.
+     * Server side, so every player in range hears it, including those who do not see the tear.
+     */
+    private void playImpactSounds(ServerLevel level) {
+        float volume = WormholeImpactLevers.IMPACT_SOUND_VOLUME;
+        level.playSound(null, targetPos, SoundEvents.WARDEN_SONIC_BOOM, SoundSource.HOSTILE, volume, IMPACT_BOOM_PITCH);
+        level.playSound(null, targetPos, SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.WEATHER, volume, IMPACT_THUNDER_PITCH);
     }
 
     /** Plays a sound at the tear for every nearby player. */
@@ -250,6 +302,8 @@ public class WormholeSpawnAnimation extends Entity {
      * during seven and a half seconds.
      */
     private void clientTick() {
+        // Before the particle guard: a broken particle sprite must not cost the impact.
+        reportToImpactEffects(elapsed(0.0f));
         if (particlesUnavailable) return;
 
         Level level = this.level();
@@ -292,6 +346,38 @@ public class WormholeSpawnAnimation extends Entity {
     }
 
     /**
+     * Tells the client's impact effects where the animation stands: its timeline on the first
+     * tick this client sees, then the impact once. Also freezes the swirl's axis on that first
+     * tick, which is the moment the animation "appears" to this player.
+     */
+    private void reportToImpactEffects(float t) {
+        Vec3 centre = this.position();
+        if (!arrivalReported) {
+            arrivalReported = true;
+            swirlAxis = PortalSwirl.axisTowardsViewer(centre);
+            PortalSwirl.remember(centre, swirlAxis);
+
+            long start = startGameTime();
+            WormholeFxBridge.arrivalStarted(centre, start, start + IMPACT_AT);
+            // A player who only comes into range well after the impact should not get a
+            // title and a ground wave out of nowhere.
+            if (t > IMPACT_AT + IMPACT_LATE_GRACE_TICKS) {
+                impactReported = true;
+            }
+        }
+        if (!impactReported && t >= IMPACT_AT) {
+            impactReported = true;
+            WormholeFxBridge.impact(centre);
+        }
+    }
+
+    /** Level game time the animation started at, on this side's clock. */
+    private long startGameTime() {
+        long startedAt = this.entityData.get(DATA_STARTED_AT);
+        return startedAt != 0L ? startedAt : this.level().getGameTime() - this.tickCount;
+    }
+
+    /**
      * Throws tinted glass shards out of the crack, in every direction. Vanilla's block
      * particles keep the direction but pick their own small speed, and fall with gravity.
      */
@@ -315,14 +401,10 @@ public class WormholeSpawnAnimation extends Entity {
         if (type == null) return;
 
         int count = Mth.ceil(SWIRL_PER_TICK * Mth.clamp(progress, 0.0, 1.0));
-        double ringZ = z + 1.0;
-        double destinationZ = z + WormholeEntity.PARTICLE_DESTINATION_Z_OFFSET;
-        for (int i = 0; i < count; i++) {
-            double angle = this.random.nextDouble() * Math.PI * 2;
-            level.addParticle(type,
-                    x + Math.cos(angle) * SWIRL_RADIUS, y + Math.sin(angle) * SWIRL_RADIUS, ringZ,
-                    x, y, destinationZ);
-        }
+        Vec3 axis = swirlAxis != null ? swirlAxis : PortalSwirl.DEFAULT_AXIS;
+        PortalSwirl.spawn(level, type, new Vec3(x, y, z), axis,
+                SWIRL_RING_OFFSET, WormholeEntity.PARTICLE_DESTINATION_Z_OFFSET,
+                SWIRL_RADIUS, count, this.random);
     }
 
     /** Fast start, slow end: the crack tears quickly, then slows as it reaches full length. */

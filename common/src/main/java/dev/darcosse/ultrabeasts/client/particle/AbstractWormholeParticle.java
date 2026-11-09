@@ -1,6 +1,7 @@
 package dev.darcosse.ultrabeasts.client.particle;
 
 import dev.darcosse.ultrabeasts.entity.AbstractPortalEntity;
+import dev.darcosse.ultrabeasts.entity.PortalSwirl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.ParticleRenderType;
@@ -17,7 +18,8 @@ import net.minecraft.world.phys.Vec3;
  * when no explicit target is given. Client side only.
  * <p>
  * The velocity arguments carry the TARGET POINT, not a velocity: the portal passes the
- * point the swirl converges on (see {@code AbstractPortalEntity.spawnSwirlParticles}).
+ * point the swirl converges on (see {@code AbstractPortalEntity.spawnSwirlParticles}). The
+ * axis of the funnel, which used to be world Z, comes through {@link PortalSwirl#pendingAxis()}.
  */
 public abstract class AbstractWormholeParticle extends TextureSheetParticle {
 
@@ -30,8 +32,11 @@ public abstract class AbstractWormholeParticle extends TextureSheetParticle {
     /** Half-size of the box searched for a portal when no target is given, in blocks. */
     private static final double PORTAL_SEARCH_RADIUS = 5;
 
-    /** Random Z spread of the start point (±0.25 block), so the swirl has some depth. */
-    private static final double START_Z_JITTER = 0.5;
+    /**
+     * Random spread of the start point along the swirl axis (±0.25 block), so the swirl has
+     * some depth.
+     */
+    private static final double START_AXIAL_JITTER = 0.5;
 
     /** Shortest lifetime, in ticks. */
     private static final int MIN_LIFETIME = 25;
@@ -60,11 +65,22 @@ public abstract class AbstractWormholeParticle extends TextureSheetParticle {
     private static final float LILAC_UNTIL = 0.15f;
     private static final float AZURE_UNTIL = 0.22f;
 
-    // Only the start Z is kept: X and Y are derived from the initial distance instead.
-    private final double startZ;
     private final double destX, destY, destZ;
-    private final double initialDistanceX;
-    private final double initialDistanceY;
+
+    /** Unit axis of the swirl (see {@code PortalSwirl}): world Z for the exit portal. */
+    private final double axisX, axisY, axisZ;
+
+    /**
+     * Start distance from the target along the axis, jitter included. Covered linearly: it is
+     * what draws the funnel's depth.
+     */
+    private final double startAxial;
+
+    /**
+     * Start offset from the target across the axis. Covered with a cubic ease-out: the
+     * particle rushes in, then slows near the centre.
+     */
+    private final double radialX, radialY, radialZ;
 
     /**
      * @param vX       target X (see the class comment), or ~0 to search for a nearby portal
@@ -77,9 +93,8 @@ public abstract class AbstractWormholeParticle extends TextureSheetParticle {
                                        double zOffset) {
         super(level, x, y, z, 0, 0, 0);
 
-        this.startZ = z + (level.random.nextDouble() * START_Z_JITTER - START_Z_JITTER / 2);
-
-        if (Math.abs(vX) > NO_TARGET_EPSILON || Math.abs(vY) > NO_TARGET_EPSILON) {
+        boolean hasTarget = Math.abs(vX) > NO_TARGET_EPSILON || Math.abs(vY) > NO_TARGET_EPSILON;
+        if (hasTarget) {
             this.destX = vX;
             this.destY = vY;
             this.destZ = vZ;
@@ -107,8 +122,21 @@ public abstract class AbstractWormholeParticle extends TextureSheetParticle {
         this.gCol = 0.8f;
         this.bCol = 0.9f;
 
-        this.initialDistanceX = x - destX;
-        this.initialDistanceY = y - destY;
+        // A particle without an explicit target falls back on world Z, the axis the
+        // fallback offset above is expressed in.
+        Vec3 axis = hasTarget ? PortalSwirl.pendingAxis() : PortalSwirl.DEFAULT_AXIS;
+        this.axisX = axis.x;
+        this.axisY = axis.y;
+        this.axisZ = axis.z;
+
+        double offsetX = x - destX;
+        double offsetY = y - destY;
+        double offsetZ = z - destZ;
+        double axial = offsetX * axisX + offsetY * axisY + offsetZ * axisZ;
+        this.radialX = offsetX - axisX * axial;
+        this.radialY = offsetY - axisY * axial;
+        this.radialZ = offsetZ - axisZ * axial;
+        this.startAxial = axial + (level.random.nextDouble() * START_AXIAL_JITTER - START_AXIAL_JITTER / 2);
 
         this.lifetime = MIN_LIFETIME + level.random.nextInt(LIFETIME_SPREAD);
         this.pickSprite(sprite);
@@ -129,12 +157,13 @@ public abstract class AbstractWormholeParticle extends TextureSheetParticle {
 
         float progress = (float) this.age / this.lifetime;
 
-        // Z moves linearly; X and Y follow a cubic ease-out, so the particle rushes in and
-        // slows near the centre.
-        this.z = startZ + (destZ - startZ) * progress;
+        // Along the axis the particle moves linearly; across it, it follows a cubic ease-out.
+        // With the axis on world Z this is exactly the motion of 4.1 and before.
+        double axial = startAxial * (1.0 - progress);
         double curve = Math.pow(1.0 - progress, 3);
-        this.x = destX + (initialDistanceX * curve);
-        this.y = destY + (initialDistanceY * curve);
+        this.x = destX + axisX * axial + radialX * curve;
+        this.y = destY + axisY * axial + radialY * curve;
+        this.z = destZ + axisZ * axial + radialZ * curve;
 
         if (progress < PINK_UNTIL) {
             this.rCol = 1.0f;

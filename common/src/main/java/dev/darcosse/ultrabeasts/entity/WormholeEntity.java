@@ -72,11 +72,15 @@ public class WormholeEntity extends AbstractPortalEntity {
     /** Reject ground more than this far above or below the player. */
     private static final int MAX_GROUND_OFFSET = 10;
 
-    /** Plane of the particle ring, relative to the entity. Mirrors the exit portal. */
+    /**
+     * Plane of the particle ring, along the swirl axis from the entity: one block towards the
+     * viewer. Mirrors the exit portal.
+     */
     private static final double PARTICLE_RING_Z_OFFSET = 1.0;
 
     /**
-     * Where the particles converge, relative to the entity. Also the fallback of the particle
+     * Where the particles converge, along the swirl axis from the entity: three blocks away
+     * from the viewer, so the funnel sinks behind the disc. Also the fallback of the particle
      * class, so particles spawned without a target (e.g. by /particle) look the same.
      */
     public static final double PARTICLE_DESTINATION_Z_OFFSET = -3.0;
@@ -101,6 +105,14 @@ public class WormholeEntity extends AbstractPortalEntity {
      */
     private long placementTime;
 
+    /**
+     * Client side: axis of this wormhole's swirl, towards the local player as they stood when
+     * it appeared to them, then never changed. Taken over from the arrival animation when this
+     * client saw it, so the funnel does not jump at the hand-over. Null until the first
+     * client tick.
+     */
+    private Vec3 swirlAxis;
+
     /** Constructor used by the entity type factory. */
     public WormholeEntity(EntityType<? extends WormholeEntity> type, Level level) {
         super(type, level);
@@ -124,6 +136,18 @@ public class WormholeEntity extends AbstractPortalEntity {
     @Override
     protected double particleDestinationZOffset() {
         return PARTICLE_DESTINATION_Z_OFFSET;
+    }
+
+    /**
+     * Turns the funnel towards the viewer, once: the disc itself always faces the camera,
+     * but a funnel that kept turning would visibly swing as the player walks around it.
+     */
+    @Override
+    protected Vec3 swirlAxis() {
+        if (swirlAxis == null) {
+            swirlAxis = PortalSwirl.recallOrFreeze(this.position());
+        }
+        return swirlAxis;
     }
 
     /** Closes the wormhole once its lifespan is over. */

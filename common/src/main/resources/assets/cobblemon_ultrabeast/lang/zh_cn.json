@@ -31,5 +31,7 @@
   "entity.cobblemon_ultrabeast.wormhole.spawn": "虫洞开启",
   "entity.cobblemon_ultrabeast.wormhole.ambient": "虫洞嗡鸣",
   "cinematic.cobblemon_ultrabeast.skip": "按空格键跳过",
-  "cinematic.cobblemon_ultrabeast.encounter.heading": "发现究极异兽"
+  "cinematic.cobblemon_ultrabeast.encounter.heading": "发现究极异兽",
+  "title.ultrabeasts.wormhole_impact": "究极之洞",
+  "title.ultrabeasts.wormhole_impact.subtitle": "现实正在被撕裂"
 }

@@ -3,6 +3,8 @@ package dev.darcosse.ultrabeasts.client;
 import dev.darcosse.ultrabeasts.client.cinematic.ArrivalFadeScreen;
 import dev.darcosse.ultrabeasts.client.cinematic.EncounterCinematicScreen;
 import dev.darcosse.ultrabeasts.client.config.ClientConfigManager;
+import dev.darcosse.ultrabeasts.client.fx.WormholeImpactEffects;
+import dev.darcosse.ultrabeasts.fx.WormholeFxBridge;
 import dev.darcosse.ultrabeasts.network.EncounterCinematicPayload;
 import dev.darcosse.ultrabeasts.network.CinematicClientBridge;
 
@@ -23,6 +25,7 @@ public final class UltraBeastsClient {
     public static void init() {
         ClientConfigManager.load();
         CinematicClientBridge.setHandler(UltraBeastsClient::onArrival);
+        WormholeFxBridge.setHandler(WormholeImpactEffects.INSTANCE);
     }
 
     /**
